@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cinelog | Data & AI</title>
+<title>Cinelog</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,6 +16,8 @@
     --muted: #888;
     --accent: #e8c97a;
     --accent2: #c9a84c;
+    --danger: #e87a7a;
+    --success: #7ae8b0;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +33,7 @@
     overflow: hidden;
   }
 
+  /* ── Top bar ── */
   .topbar {
     display: flex;
     align-items: center;
@@ -41,43 +44,106 @@
     background: var(--surface);
     flex-shrink: 0;
   }
-
   .logo {
     font-family: 'DM Serif Display', serif;
     font-size: 20px;
     color: var(--accent);
+    letter-spacing: 0.02em;
   }
+  .logo span { font-style: italic; color: var(--muted); font-size: 13px; margin-left: 8px; font-family: 'DM Sans', sans-serif; }
+  .status-pill {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 4px 10px;
+    border-radius: 99px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+  }
+  .status-pill.loaded { border-color: var(--success); color: var(--success); }
+  .status-pill.error { border-color: var(--danger); color: var(--danger); }
 
+  /* ── Layout ── */
   .layout {
     display: flex;
     flex: 1;
     overflow: hidden;
   }
 
-  /* Left Side: Data Panel */
+  /* ── Left: data panel ── */
   .data-panel {
-    width: 55%;
+    width: 52%;
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border);
     overflow: hidden;
   }
 
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .filter-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .filter-input:focus { border-color: var(--accent2); }
+  .filter-input::placeholder { color: var(--muted); }
+  select.filter-input {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-color: var(--surface2);
+    padding-right: 28px;
+  }
+  select.filter-input option { background: #1e1e1e; color: #f0ede8; }
+
   .table-wrap {
     flex: 1;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: auto;
     background: var(--bg);
   }
+  .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+  .table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
   table {
     width: 100%;
+    min-width: 900px;
     border-collapse: collapse;
     font-size: 12px;
-    min-width: 800px;
+    table-layout: fixed;
   }
-
   thead { position: sticky; top: 0; background: var(--surface); z-index: 2; }
-
   th {
     text-align: left;
     padding: 10px 20px;
@@ -85,160 +151,625 @@
     font-family: 'DM Mono', monospace;
     color: var(--muted);
     text-transform: uppercase;
+    letter-spacing: 0.08em;
     border-bottom: 1px solid var(--border);
+    font-weight: 400;
   }
-
-  td { padding: 10px 20px; border-bottom: 1px solid var(--border); }
-
-  /* Right Side: Chat Panel */
-  .chat-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: #0a0a0a;
-  }
-
-  .panel-header {
-    padding: 14px 20px;
+  td {
+    padding: 9px 20px;
     border-bottom: 1px solid var(--border);
-    font-family: 'DM Mono';
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .col-year { width: 60px; }
+  .col-movie { width: 220px; }
+  .col-dir { width: 160px; }
+  .col-writer { width: 160px; }
+  .col-camera { width: 160px; }
+  .col-music { width: 160px; }
+  .col-country { width: 130px; }
+
+  tr:hover td { background: var(--surface2); }
+  td.year-col {
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    font-size: 11px;
+  }
+  td.country-col {
     font-size: 11px;
     color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  #messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
-
-  .msg-bubble {
-    background: var(--surface2);
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border: 1px solid var(--border);
-    font-size: 13px;
-  }
-
-  .input-area {
-    padding: 20px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 10px;
-  }
-
-  input {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: white;
-    padding: 10px;
-    border-radius: 6px;
-  }
-
-  button {
-    background: var(--accent);
-    color: black;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
   }
 
   .stats-row {
     display: flex;
+    gap: 0;
     border-top: 1px solid var(--border);
-    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .stat {
+    flex: 1;
+    padding: 10px 20px;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
   }
 
-  .stat { flex: 1; padding: 10px 20px; border-right: 1px solid var(--border); }
-  .stat-val { font-family: 'DM Serif Display'; font-size: 20px; color: var(--accent); }
-  .stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; font-family: 'DM Mono'; }
+  /* ── Right: chat panel ── */
+  .chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .msg-label.ai { color: var(--accent2); }
+  .msg-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+    max-width: 100%;
+  }
+  .msg-bubble.user {
+    background: var(--surface);
+    border-color: var(--border2);
+    align-self: flex-end;
+    max-width: 85%;
+  }
+  .msg-bubble.ai { border-color: rgba(232,201,122,0.2); }
+  .msg-bubble strong { color: var(--accent); font-weight: 500; }
+
+  .typing {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .typing span {
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+    opacity: 0.6;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 20px 12px;
+  }
+  .suggestion-chip {
+    font-size: 11px;
+    padding: 5px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 99px;
+    color: var(--muted);
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .suggestion-chip:hover {
+    border-color: var(--accent2);
+    color: var(--accent);
+    background: rgba(232,201,122,0.05);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+    height: 42px;
+  }
+  .chat-input:focus { border-color: var(--accent2); }
+  .chat-input::placeholder { color: var(--muted); }
+  .send-btn {
+    background: var(--accent);
+    color: #0d0d0d;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--accent2); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    gap: 8px;
+    padding: 40px;
+    text-align: center;
+  }
+  .empty-state .icon {
+    font-family: 'DM Serif Display', serif;
+    font-size: 40px;
+    color: var(--border2);
+  }
+  .empty-state p { font-size: 13px; line-height: 1.6; }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 10;
+  }
+  .loading-overlay .logo-big {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    color: var(--accent);
+  }
+  .loading-bar {
+    width: 200px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .loading-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: loadBar 1.8s ease-in-out infinite;
+  }
+  @keyframes loadBar {
+    0% { width: 0%; margin-left: 0; }
+    50% { width: 60%; margin-left: 20%; }
+    100% { width: 0%; margin-left: 100%; }
+  }
+  .loading-text {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
 </style>
 </head>
 <body>
 
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="logo-big">Cinelog</div>
+  <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+  <div class="loading-text" id="loadingText">Fetching your film log...</div>
+</div>
+
 <div class="topbar">
-  <div class="logo">Cinelog</div>
-  <div id="status" style="font-size:11px; font-family:'DM Mono'; color:var(--muted);">Syncing...</div>
+  <div class="logo">Cinelog <span>film log analyst</span></div>
+  <div class="status-pill" id="statusPill">loading...</div>
 </div>
 
 <div class="layout">
   <div class="data-panel">
-    <div class="panel-header">Film Database</div>
+    <div class="panel-header">
+      <span class="panel-title">Film log</span>
+      <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace" id="rowCount">—</span>
+    </div>
+    <div class="filter-row">
+      <select class="filter-input" id="columnSelect" style="width:150px;flex:none">
+        <option value="all">All columns</option>
+        <option value="movie">Movie</option>
+        <option value="director">Director</option>
+        <option value="screenwriter">Screenwriter</option>
+        <option value="cinematography">Cinematography</option>
+        <option value="music">Music</option>
+        <option value="country">Country</option>
+      </select>
+      <input class="filter-input" id="searchInput" placeholder="Search..." />
+      <input class="filter-input" id="yearInput" placeholder="Year..." style="width:80px;flex:none" />
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Year</th>
-            <th>Movie</th>
-            <th>Director</th>
-            <th>Country</th>
+            <th class="col-year">Year</th>
+            <th class="col-movie">Movie</th>
+            <th class="col-dir">Director</th>
+            <th class="col-writer">Screenwriter</th>
+            <th class="col-camera">Cinematography</th>
+            <th class="col-music">Music</th>
+            <th class="col-country">Country</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val" id="statMovies">0</div><div class="stat-label">Movies</div></div>
-      <div class="stat"><div class="stat-val" id="statYears">0</div><div class="stat-label">Years</div></div>
+      <div class="stat">
+        <div class="stat-val" id="statMovies">—</div>
+        <div class="stat-label">Movies</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statYears">—</div>
+        <div class="stat-label">Years</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statCountries">—</div>
+        <div class="stat-label">Countries</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="statDirectors">—</div>
+        <div class="stat-label">Directors</div>
+      </div>
     </div>
   </div>
 
   <div class="chat-panel">
-    <div class="panel-header">Gemini Assistant (Offline)</div>
-    <div id="messages">
-        <div class="msg-bubble">
-            <strong>System:</strong> AI analysis is currently disconnected. The data table on the left is live.
-        </div>
+    <div class="panel-header">
+      <span class="panel-title">Ask about your data</span>
     </div>
-    <div class="input-area">
-      <input type="text" placeholder="AI analysis disabled..." disabled>
-      <button disabled>Ask</button>
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">◈</div>
+        <p>Ask anything about your film log.<br>Claude will analyze your data and respond.</p>
+      </div>
+    </div>
+    <div class="suggestions" id="suggestions">
+      <button class="suggestion-chip" onclick="askSuggestion(this)">Which country appears most?</button>
+      <button class="suggestion-chip" onclick="askSuggestion(this)">Most frequent director?</button>
+      <button class="suggestion-chip" onclick="askSuggestion(this)">Which decade has the most films?</button>
+      <button class="suggestion-chip" onclick="askSuggestion(this)">Films with no credited musician?</button>
+      <button class="suggestion-chip" onclick="askSuggestion(this)">Any gaps in the log?</button>
+    </div>
+    <div class="input-row">
+      <input class="chat-input" id="chatInput" placeholder="Ask a question about your films..." />
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Ask</button>
     </div>
   </div>
 </div>
 
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+];
+
+let allRows = [];
+let filteredRows = [];
+let isFirstLoad = true;
 
 async function loadData() {
+  if (isFirstLoad) document.getElementById('loadingText').textContent = 'Fetching your film log...';
+
+  let text = null;
+  for (const proxyFn of PROXIES) {
+    try {
+      const res = await fetch(proxyFn(SHEET_URL));
+      if (!res.ok) continue;
+      const buf = await res.arrayBuffer();
+      const t = new TextDecoder('utf-8').decode(buf);
+      if (t && t.includes(',')) { text = t; break; }
+    } catch (e) { continue; }
+  }
+
+  if (!text) {
+    if (isFirstLoad) {
+      document.getElementById('loadingText').textContent = 'Failed to load sheet.';
+      document.getElementById('statusPill').textContent = 'error';
+      document.getElementById('statusPill').classList.add('error');
+      setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; isFirstLoad = false; }, 2000);
+    }
+    return;
+  }
+
   try {
-    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`);
-    const csv = await res.text();
-    const lines = csv.trim().split('\n').slice(1);
-    
-    const tbody = document.getElementById('tableBody');
-    let movies = 0;
-    let years = new Set();
-
-    tbody.innerHTML = lines.map(line => {
-      const col = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
-      if (!col[1] || col[0].toLowerCase().includes('total')) return '';
-      
-      movies++;
-      years.add(col[0]);
-
-      return `
-        <tr>
-          <td style="color:var(--accent); font-family:'DM Mono';">${col[0]}</td>
-          <td><strong>${col[1]}</strong></td>
-          <td>${col[2] || '—'}</td>
-          <td style="color:var(--muted);">${col[6] || '—'}</td>
-        </tr>
-      `;
-    }).join('');
-
-    document.getElementById('statMovies').innerText = movies;
-    document.getElementById('statYears').innerText = years.size;
-    document.getElementById('status').innerText = "Database Connected";
+    const rows = parseCSV(text);
+    allRows = cleanRows(rows);
+    filteredRows = [...allRows];
+    renderTable(filteredRows);
+    updateStats(allRows);
+    if (isFirstLoad) {
+      document.getElementById('loadingOverlay').style.display = 'none';
+      isFirstLoad = false;
+    }
+    const pill = document.getElementById('statusPill');
+    const count = allRows.length;
+    pill.textContent = `${count} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+    pill.className = 'status-pill loaded';
   } catch (e) {
-    document.getElementById('status').innerText = "Connection Error";
+    if (isFirstLoad) {
+      document.getElementById('loadingText').textContent = 'Failed to parse data.';
+      document.getElementById('statusPill').textContent = 'error';
+      document.getElementById('statusPill').classList.add('error');
+      setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; isFirstLoad = false; }, 2000);
+    }
   }
 }
+
+setInterval(loadData, 2 * 60 * 1000);
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    return obj;
+  });
+}
+
+function cleanRows(rows) {
+  let lastYear = '';
+  return rows.map(r => {
+    const rawYear = r['Year'] ? r['Year'].replace(/^"|"$/g, '').trim() : '';
+    const movie = r['Movie'] ? r['Movie'].replace(/^"|"$/g, '').trim() : '';
+
+    // Filter out summary rows, totals, and empty placeholder rows
+    if (
+      rawYear.toLowerCase().includes('total') || 
+      rawYear.toLowerCase().includes('movies') ||
+      movie.toLowerCase().includes('no movies logged yet') ||
+      movie.match(/^\d+$/) ||
+      (!rawYear && !movie)
+    ) {
+      return null;
+    }
+
+    const yearNum = parseInt(rawYear);
+    if (!isNaN(yearNum)) {
+      lastYear = yearNum;
+    } else if (rawYear === '' && lastYear !== '') {
+      r['Year'] = lastYear;
+    } else {
+      return null;
+    }
+
+    if (!movie || movie === '') return null;
+
+    return {
+      year: lastYear,
+      movie: movie,
+      director: r['Director'] ? r['Director'].replace(/^"|"$/g, '').trim() : '',
+      screenwriter: r['Screenwriter'] ? r['Screenwriter'].replace(/^"|"$/g, '').trim() : '',
+      cinematography: r['Cinematography'] ? r['Cinematography'].replace(/^"|"$/g, '').trim() : '',
+      music: r['Music'] ? r['Music'].replace(/^"|"$/g, '').trim() : '',
+      country: r['Country'] ? r['Country'].replace(/^"|"$/g, '').trim() : '',
+    };
+  }).filter(Boolean);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = rows.map(r => {
+    return `<tr>
+      <td class="year-col">${r.year}</td>
+      <td title="${r.movie}"><strong>${r.movie}</strong></td>
+      <td title="${r.director}">${r.director || '<span style="color:#444">—</span>'}</td>
+      <td title="${r.screenwriter}">${r.screenwriter || '<span style="color:#444">—</span>'}</td>
+      <td title="${r.cinematography}">${r.cinematography || '<span style="color:#444">—</span>'}</td>
+      <td title="${r.music}">${r.music || '<span style="color:#444">—</span>'}</td>
+      <td class="country-col">${r.country || ''}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('rowCount').textContent = `${rows.length} rows`;
+}
+
+function updateStats(rows) {
+  const years = new Set(rows.map(r => r.year)).size;
+  const directors = new Set(rows.map(r => r.director).filter(Boolean)).size;
+  const countrySet = new Set();
+  rows.forEach(r => {
+    if (r.country) {
+      r.country.split(',').map(c => c.trim()).filter(Boolean).forEach(c => countrySet.add(c));
+    }
+  });
+
+  document.getElementById('statMovies').textContent = rows.length;
+  document.getElementById('statYears').textContent = years;
+  document.getElementById('statCountries').textContent = countrySet.size;
+  document.getElementById('statDirectors').textContent = directors;
+}
+
+function applyFilter() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const year = document.getElementById('yearInput').value.trim();
+  const col = document.getElementById('columnSelect').value;
+  filteredRows = allRows.filter(r => {
+    let matchSearch = !search;
+    if (!matchSearch) {
+      if (col === 'all') {
+        matchSearch =
+          r.movie.toLowerCase().includes(search) ||
+          r.director.toLowerCase().includes(search) ||
+          r.country.toLowerCase().includes(search) ||
+          r.screenwriter.toLowerCase().includes(search) ||
+          r.cinematography.toLowerCase().includes(search) ||
+          r.music.toLowerCase().includes(search);
+      } else {
+        matchSearch = (r[col] || '').toLowerCase().includes(search);
+      }
+    }
+    const matchYear = !year || String(r.year).includes(year);
+    return matchSearch && matchYear;
+  });
+  renderTable(filteredRows);
+}
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+document.getElementById('yearInput').addEventListener('input', applyFilter);
+document.getElementById('columnSelect').addEventListener('change', applyFilter);
+
+function buildDataSummary() {
+  return allRows.map(r =>
+    `${r.year} | ${r.movie} | ${r.director || 'Unknown'} | ${r.screenwriter || 'Unknown'} | ${r.cinematography || 'None'} | ${r.music || 'None'} | ${r.country || 'Unknown'}`
+  ).join('\n');
+}
+
+function addMessage(role, text) {
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.innerHTML = `
+    <div class="msg-label ${role === 'ai' ? 'ai' : ''}">${role === 'ai' ? 'Claude' : 'You'}</div>
+    <div class="msg-bubble ${role}">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="msg-label ai">Claude</div>
+    <div class="msg-bubble ai"><div class="typing"><span></span><span></span><span></span></div></div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+const conversationHistory = [];
+
+async function sendMessage(overrideText) {
+  const input = document.getElementById('chatInput');
+  const question = overrideText || input.value.trim();
+  if (!question || allRows.length === 0) return;
+
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+  addMessage('user', question);
+  addTyping();
+
+  conversationHistory.push({ role: 'user', content: question });
+
+  const dataContext = buildDataSummary();
+  const systemPrompt = `You are a film data analyst. The log has these columns: Year | Movie | Director | Screenwriter | Cinematography | Music | Country. Answer clearly and concisely.
+
+Data:
+${dataContext}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: conversationHistory,
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+    conversationHistory.push({ role: 'assistant', content: reply });
+    removeTyping();
+    addMessage('ai', reply);
+  } catch (e) {
+    removeTyping();
+    addMessage('ai', 'Error connecting to Claude.');
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function askSuggestion(btn) {
+  sendMessage(btn.textContent);
+}
+
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
 
 loadData();
 </script>
