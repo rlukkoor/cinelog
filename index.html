@@ -405,6 +405,14 @@
     color: var(--muted);
   }
 </style>
+
+<script type="importmap">
+  {
+    "imports": {
+      "@google/genai": "https://esm.run/@google/genai"
+    }
+  }
+</script>
 </head>
 <body>
 
@@ -476,12 +484,12 @@
 
   <div class="chat-panel">
     <div class="panel-header">
-      <span class="panel-title">Ask about your data</span>
+      <span class="panel-title">Ask Gemini</span>
     </div>
     <div class="messages" id="messages">
       <div class="empty-state" id="emptyState">
         <div class="icon">◈</div>
-        <p>Ask anything about your film log.<br>Claude will analyze your data and respond.</p>
+        <p>Ask Gemini about your film data.<br>It will analyze your log and provide insights.</p>
       </div>
     </div>
     <div class="suggestions" id="suggestions">
@@ -489,16 +497,26 @@
       <button class="suggestion-chip" onclick="askSuggestion(this)">Most frequent director?</button>
       <button class="suggestion-chip" onclick="askSuggestion(this)">Which decade has the most films?</button>
       <button class="suggestion-chip" onclick="askSuggestion(this)">Films with no credited musician?</button>
-      <button class="suggestion-chip" onclick="askSuggestion(this)">Any gaps in the log?</button>
     </div>
     <div class="input-row">
-      <input class="chat-input" id="chatInput" placeholder="Ask a question about your films..." />
+      <input class="chat-input" id="chatInput" placeholder="Ask about your films..." />
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">Ask</button>
     </div>
   </div>
 </div>
 
-<script>
+<script type="module">
+import { GoogleGenAI } from "@google/genai";
+
+// ── GEMINI CONFIGURATION ──
+// Replace the string below with your actual API Key from AI Studio
+const API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+const genAI = new GoogleGenAI(API_KEY);
+const geminiModel = genAI.getGenerativeModel({ 
+  model: "gemini-1.5-flash",
+  systemInstruction: "You are a specialized film log analyst. You help users explore their personal movie-watching history. Use the provided text summary of their log to answer questions. Be insightful, concise, and bold key names or numbers."
+});
+
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
 const PROXIES = [
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -508,6 +526,7 @@ const PROXIES = [
 let allRows = [];
 let filteredRows = [];
 let isFirstLoad = true;
+let chatHistory = [];
 
 async function loadData() {
   if (isFirstLoad) document.getElementById('loadingText').textContent = 'Fetching your film log...';
@@ -544,14 +563,11 @@ async function loadData() {
       isFirstLoad = false;
     }
     const pill = document.getElementById('statusPill');
-    const count = allRows.length;
-    pill.textContent = `${count} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+    pill.textContent = `${allRows.length} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
     pill.className = 'status-pill loaded';
   } catch (e) {
     if (isFirstLoad) {
       document.getElementById('loadingText').textContent = 'Failed to parse data.';
-      document.getElementById('statusPill').textContent = 'error';
-      document.getElementById('statusPill').classList.add('error');
       setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; isFirstLoad = false; }, 2000);
     }
   }
@@ -582,28 +598,12 @@ function cleanRows(rows) {
   return rows.map(r => {
     const rawYear = r['Year'] ? r['Year'].replace(/^"|"$/g, '').trim() : '';
     const movie = r['Movie'] ? r['Movie'].replace(/^"|"$/g, '').trim() : '';
-
-    // Filter out summary rows, totals, and empty placeholder rows
-    if (
-      rawYear.toLowerCase().includes('total') || 
-      rawYear.toLowerCase().includes('movies') ||
-      movie.toLowerCase().includes('no movies logged yet') ||
-      movie.match(/^\d+$/) ||
-      (!rawYear && !movie)
-    ) {
-      return null;
-    }
-
+    if (rawYear.toLowerCase().includes('total') || movie.match(/^\d+$/) || (!rawYear && !movie)) return null;
     const yearNum = parseInt(rawYear);
-    if (!isNaN(yearNum)) {
-      lastYear = yearNum;
-    } else if (rawYear === '' && lastYear !== '') {
-      r['Year'] = lastYear;
-    } else {
-      return null;
-    }
-
-    if (!movie || movie === '') return null;
+    if (!isNaN(yearNum)) lastYear = yearNum;
+    else if (rawYear === '' && lastYear !== '') r['Year'] = lastYear;
+    else return null;
+    if (!movie) return null;
 
     return {
       year: lastYear,
@@ -619,69 +619,70 @@ function cleanRows(rows) {
 
 function renderTable(rows) {
   const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = rows.map(r => {
-    return `<tr>
+  tbody.innerHTML = rows.map(r => `
+    <tr>
       <td class="year-col">${r.year}</td>
       <td title="${r.movie}"><strong>${r.movie}</strong></td>
-      <td title="${r.director}">${r.director || '<span style="color:#444">—</span>'}</td>
-      <td title="${r.screenwriter}">${r.screenwriter || '<span style="color:#444">—</span>'}</td>
-      <td title="${r.cinematography}">${r.cinematography || '<span style="color:#444">—</span>'}</td>
-      <td title="${r.music}">${r.music || '<span style="color:#444">—</span>'}</td>
+      <td title="${r.director}">${r.director || '—'}</td>
+      <td title="${r.screenwriter}">${r.screenwriter || '—'}</td>
+      <td title="${r.cinematography}">${r.cinematography || '—'}</td>
+      <td title="${r.music}">${r.music || '—'}</td>
       <td class="country-col">${r.country || ''}</td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
   document.getElementById('rowCount').textContent = `${rows.length} rows`;
 }
 
 function updateStats(rows) {
   const years = new Set(rows.map(r => r.year)).size;
   const directors = new Set(rows.map(r => r.director).filter(Boolean)).size;
-  const countrySet = new Set();
-  rows.forEach(r => {
-    if (r.country) {
-      r.country.split(',').map(c => c.trim()).filter(Boolean).forEach(c => countrySet.add(c));
-    }
-  });
+  const countries = new Set();
+  rows.forEach(r => r.country?.split(',').forEach(c => countries.add(c.trim())));
 
   document.getElementById('statMovies').textContent = rows.length;
   document.getElementById('statYears').textContent = years;
-  document.getElementById('statCountries').textContent = countrySet.size;
+  document.getElementById('statCountries').textContent = Array.from(countries).filter(Boolean).length;
   document.getElementById('statDirectors').textContent = directors;
 }
-
-function applyFilter() {
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const year = document.getElementById('yearInput').value.trim();
-  const col = document.getElementById('columnSelect').value;
-  filteredRows = allRows.filter(r => {
-    let matchSearch = !search;
-    if (!matchSearch) {
-      if (col === 'all') {
-        matchSearch =
-          r.movie.toLowerCase().includes(search) ||
-          r.director.toLowerCase().includes(search) ||
-          r.country.toLowerCase().includes(search) ||
-          r.screenwriter.toLowerCase().includes(search) ||
-          r.cinematography.toLowerCase().includes(search) ||
-          r.music.toLowerCase().includes(search);
-      } else {
-        matchSearch = (r[col] || '').toLowerCase().includes(search);
-      }
-    }
-    const matchYear = !year || String(r.year).includes(year);
-    return matchSearch && matchYear;
-  });
-  renderTable(filteredRows);
-}
-document.getElementById('searchInput').addEventListener('input', applyFilter);
-document.getElementById('yearInput').addEventListener('input', applyFilter);
-document.getElementById('columnSelect').addEventListener('change', applyFilter);
 
 function buildDataSummary() {
   return allRows.map(r =>
     `${r.year} | ${r.movie} | ${r.director || 'Unknown'} | ${r.screenwriter || 'Unknown'} | ${r.cinematography || 'None'} | ${r.music || 'None'} | ${r.country || 'Unknown'}`
   ).join('\n');
 }
+
+// ── MESSAGING LOGIC ──
+
+window.sendMessage = async function(overrideText) {
+  const input = document.getElementById('chatInput');
+  const question = overrideText || input.value.trim();
+  if (!question || allRows.length === 0) return;
+
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+  addMessage('user', question);
+  addTyping();
+
+  const dataContext = buildDataSummary();
+  const prompt = `Based on this movie log:\n${dataContext}\n\nQuestion: ${question}`;
+
+  try {
+    const chat = geminiModel.startChat({ history: chatHistory });
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+    chatHistory.push({ role: "model", parts: [{ text: text }] });
+
+    removeTyping();
+    addMessage('ai', text);
+  } catch (e) {
+    console.error(e);
+    removeTyping();
+    addMessage('ai', "Encountered an error. Ensure your API key is valid and you're not over the free tier limit.");
+  }
+  document.getElementById('sendBtn').disabled = false;
+};
 
 function addMessage(role, text) {
   const empty = document.getElementById('emptyState');
@@ -690,23 +691,20 @@ function addMessage(role, text) {
   const div = document.createElement('div');
   div.className = 'msg';
   div.innerHTML = `
-    <div class="msg-label ${role === 'ai' ? 'ai' : ''}">${role === 'ai' ? 'Claude' : 'You'}</div>
+    <div class="msg-label ${role === 'ai' ? 'ai' : ''}">${role === 'ai' ? 'Gemini' : 'You'}</div>
     <div class="msg-bubble ${role}">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>
   `;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
-  return div;
 }
 
 function addTyping() {
-  const empty = document.getElementById('emptyState');
-  if (empty) empty.remove();
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = 'msg';
   div.id = 'typingIndicator';
   div.innerHTML = `
-    <div class="msg-label ai">Claude</div>
+    <div class="msg-label ai">Gemini</div>
     <div class="msg-bubble ai"><div class="typing"><span></span><span></span><span></span></div></div>
   `;
   msgs.appendChild(div);
@@ -718,57 +716,10 @@ function removeTyping() {
   if (t) t.remove();
 }
 
-const conversationHistory = [];
-
-async function sendMessage(overrideText) {
-  const input = document.getElementById('chatInput');
-  const question = overrideText || input.value.trim();
-  if (!question || allRows.length === 0) return;
-
-  input.value = '';
-  document.getElementById('sendBtn').disabled = true;
-  addMessage('user', question);
-  addTyping();
-
-  conversationHistory.push({ role: 'user', content: question });
-
-  const dataContext = buildDataSummary();
-  const systemPrompt = `You are a film data analyst. The log has these columns: Year | Movie | Director | Screenwriter | Cinematography | Music | Country. Answer clearly and concisely.
-
-Data:
-${dataContext}`;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: conversationHistory,
-      })
-    });
-
-    const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
-    conversationHistory.push({ role: 'assistant', content: reply });
-    removeTyping();
-    addMessage('ai', reply);
-  } catch (e) {
-    removeTyping();
-    addMessage('ai', 'Error connecting to Claude.');
-  }
-
-  document.getElementById('sendBtn').disabled = false;
-}
-
-function askSuggestion(btn) {
-  sendMessage(btn.textContent);
-}
+window.askSuggestion = (btn) => window.sendMessage(btn.textContent);
 
 document.getElementById('chatInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
 });
 
 loadData();
