@@ -1,198 +1,122 @@
-<script type="importmap">
-  {
-    "imports": {
-      "@google/genai": "https://esm.run/@google/genai"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cinelog | Gemini Powered</title>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.run/@google/genai"
+      }
     }
-  }
-</script>
+    </script>
+    <style>
+        /* Minimal styles to ensure visibility */
+        body { background: #0d0d0d; color: #f0ede8; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+        #loadingOverlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .panel { flex: 1; border: 1px solid #333; overflow-y: auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border-bottom: 1px solid #333; padding: 8px; text-align: left; }
+        .msg { margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #1e1e1e; }
+        .ai { border-left: 3px solid #e8c97a; }
+        input { width: 80%; padding: 10px; background: #222; color: #fff; border: 1px solid #444; }
+        button { padding: 10px; cursor: pointer; background: #e8c97a; border: none; }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay"><h1>Loading Cinelog...</h1></div>
+
+<div class="panel" id="dataPanel">
+    <h2>Film Log</h2>
+    <table>
+        <thead><tr><th>Year</th><th>Movie</th><th>Director</th><th>Country</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<div class="panel" id="chatPanel">
+    <h2>Ask Gemini</h2>
+    <div id="messages" style="height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
+    <input type="text" id="chatInput" placeholder="Ask about your movies...">
+    <button id="sendBtn">Ask</button>
+</div>
 
 <script type="module">
-import { GoogleGenAI } from "@google/genai";
+    import { GoogleGenAI } from "@google/genai";
 
-// ── 1. CONFIGURATION (PASTE KEY HERE) ──
-const API_KEY = AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8;
+    // --- PASTE YOUR KEY HERE ---
+    const API_KEY = AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8; 
+    
+    let genAI, model, allRows = [];
 
-// ── 2. INITIALIZE GEMINI ──
-let geminiModel = null;
-if (API_KEY && API_KEY !== AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8) {
-  const genAI = new GoogleGenAI(API_KEY);
-  geminiModel = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-    systemInstruction: "You are a film data analyst. Use the provided log to answer questions concisely. Use **bold** for key names/numbers."
-  });
-}
-
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
-const PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-];
-
-let allRows = [];
-let filteredRows = [];
-let isFirstLoad = true;
-let chatHistory = [];
-
-// ── DATA LOADING LOGIC ──
-async function loadData() {
-  if (isFirstLoad) document.getElementById('loadingText').textContent = 'Fetching your film log...';
-  let text = null;
-  for (const proxyFn of PROXIES) {
+    // Initialize Gemini safely
     try {
-      const res = await fetch(proxyFn(SHEET_URL));
-      if (!res.ok) continue;
-      const buf = await res.arrayBuffer();
-      text = new TextDecoder('utf-8').decode(buf);
-      if (text && text.includes(',')) break;
-    } catch (e) { continue; }
-  }
+        if (API_KEY && API_KEY.length > 10) {
+            genAI = new GoogleGenAI(API_KEY);
+            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            console.log("Gemini Initialized");
+        }
+    } catch (e) { console.error("Gemini Init Failed", e); }
 
-  if (!text) {
-    if (isFirstLoad) {
-      document.getElementById('loadingText').textContent = 'Failed to load sheet.';
-      document.getElementById('loadingOverlay').style.display = 'none';
+    // Fetch Data
+    async function loadData() {
+        const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
+        try {
+            const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+            const text = await res.text();
+            const lines = text.split('\n').slice(1);
+            
+            allRows = lines.map(line => {
+                const parts = line.split(',');
+                return { 
+                    year: parts[0]?.replace(/"/g, ''), 
+                    movie: parts[1]?.replace(/"/g, ''), 
+                    director: parts[2]?.replace(/"/g, ''), 
+                    country: parts[6]?.replace(/"/g, '') 
+                };
+            }).filter(r => r.movie && r.movie.length > 2);
+
+            document.getElementById('tableBody').innerHTML = allRows.map(r => 
+                `<tr><td>${r.year}</td><td>${r.movie}</td><td>${r.director}</td><td>${r.country}</td></tr>`
+            ).join('');
+
+            document.getElementById('loadingOverlay').style.display = 'none';
+        } catch (e) {
+            document.getElementById('loadingOverlay').innerHTML = "<h1>Error loading data. Check console.</h1>";
+        }
     }
-    return;
-  }
 
-  const rows = parseCSV(text);
-  allRows = cleanRows(rows);
-  renderTable(allRows);
-  updateStats(allRows);
-  
-  if (isFirstLoad) {
-    document.getElementById('loadingOverlay').style.display = 'none';
-    isFirstLoad = false;
-  }
-  
-  const pill = document.getElementById('statusPill');
-  pill.textContent = `${allRows.length} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
-  pill.className = 'status-pill loaded';
-}
+    // Chat Function
+    window.sendMessage = async () => {
+        const input = document.getElementById('chatInput');
+        const msg = input.value;
+        if (!msg || !model) return;
 
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  return lines.slice(1).map(line => {
-    const vals = []; let cur = '', inQ = false;
-    for (let c of line) { if (c === '"') inQ = !inQ; else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else cur += c; }
-    vals.push(cur.trim());
-    const obj = {}; headers.forEach((h, i) => obj[h] = vals[i] || '');
-    return obj;
-  });
-}
+        addMessage("You", msg);
+        input.value = '';
 
-function cleanRows(rows) {
-  let lastYear = '';
-  return rows.map(r => {
-    const rawYear = r['Year']?.replace(/^"|"$/g, '').trim() || '';
-    if (rawYear.toLowerCase().includes('total')) return null;
-    const yearNum = parseInt(rawYear);
-    if (!isNaN(yearNum)) lastYear = yearNum;
-    const movie = r['Movie']?.replace(/^"|"$/g, '').trim() || '';
-    if (!movie || movie.toLowerCase().includes("no movies logged")) return null;
-    return {
-      year: lastYear, movie,
-      director: r['Director']?.replace(/^"|"$/g, '').trim() || '',
-      screenwriter: r['Screenwriter']?.replace(/^"|"$/g, '').trim() || '',
-      cinematography: r['Cinematography']?.replace(/^"|"$/g, '').trim() || '',
-      music: r['Music']?.replace(/^"|"$/g, '').trim() || '',
-      country: r['Country']?.replace(/^"|"$/g, '').trim() || ''
+        const context = allRows.slice(0, 50).map(r => `${r.movie} (${r.year}) by ${r.director}`).join(', ');
+        const prompt = `Data: ${context}\n\nQuestion: ${msg}`;
+
+        try {
+            const result = await model.generateContent(prompt);
+            addMessage("Gemini", result.response.text());
+        } catch (e) {
+            addMessage("Error", "Could not connect to Gemini. Check your API key.");
+        }
     };
-  }).filter(Boolean);
-}
 
-function renderTable(rows) {
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td class="year-col">${r.year}</td>
-      <td><strong>${r.movie}</strong></td>
-      <td>${r.director || '—'}</td>
-      <td>${r.screenwriter || '—'}</td>
-      <td>${r.cinematography || '—'}</td>
-      <td>${r.music || '—'}</td>
-      <td class="country-col">${r.country}</td>
-    </tr>`).join('');
-  document.getElementById('rowCount').textContent = `${rows.length} rows`;
-}
+    function addMessage(sender, text) {
+        const div = document.createElement('div');
+        div.className = `msg ${sender === 'Gemini' ? 'ai' : ''}`;
+        div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        document.getElementById('messages').appendChild(div);
+    }
 
-function updateStats(rows) {
-  document.getElementById('statMovies').textContent = rows.length;
-  document.getElementById('statYears').textContent = new Set(rows.map(r => r.year)).size;
-  document.getElementById('statDirectors').textContent = new Set(rows.map(r => r.director)).size;
-  const cSet = new Set();
-  rows.forEach(r => r.country.split(',').forEach(c => cSet.add(c.trim())));
-  document.getElementById('statCountries').textContent = cSet.size;
-}
-
-// ── 3. UPDATED GEMINI CHAT LOGIC ──
-
-window.sendMessage = async function(overrideText) {
-  const input = document.getElementById('chatInput');
-  const question = overrideText || input.value.trim();
-  if (!question || allRows.length === 0) return;
-
-  if (!geminiModel) {
-    addMessage('ai', "Error: Gemini API Key is missing. Please enter your key in the script.");
-    return;
-  }
-
-  input.value = '';
-  document.getElementById('sendBtn').disabled = true;
-  addMessage('user', question);
-  addTyping();
-
-  const dataContext = allRows.map(r => `${r.year}|${r.movie}|${r.director}|${r.country}`).join('\n');
-  const prompt = `Film Log:\n${dataContext}\n\nUser Question: ${question}`;
-
-  try {
-    const chat = geminiModel.startChat({ history: chatHistory });
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-    chatHistory.push({ role: "model", parts: [{ text: text }] });
-
-    removeTyping();
-    addMessage('ai', text);
-  } catch (e) {
-    removeTyping();
-    addMessage('ai', "Error: " + e.message);
-  }
-  document.getElementById('sendBtn').disabled = false;
-};
-
-window.askSuggestion = (btn) => window.sendMessage(btn.textContent);
-
-// Helper functions for UI
-function addMessage(role, text) {
-  const empty = document.getElementById('emptyState'); if (empty) empty.remove();
-  const msgs = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.className = 'msg';
-  div.innerHTML = `<div class="msg-label ${role === 'ai' ? 'ai' : ''}">${role === 'ai' ? 'Gemini' : 'You'}</div>
-                   <div class="msg-bubble ${role}">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function addTyping() {
-  const msgs = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.className = 'msg'; div.id = 'typingIndicator';
-  div.innerHTML = `<div class="msg-label ai">Gemini</div>
-                   <div class="msg-bubble ai"><div class="typing"><span></span><span></span><span></span></div></div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function removeTyping() { const t = document.getElementById('typingIndicator'); if (t) t.remove(); }
-
-document.getElementById('chatInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
-});
-
-loadData();
+    document.getElementById('sendBtn').onclick = window.sendMessage;
+    loadData();
 </script>
+
+</body>
+</html>
