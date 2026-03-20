@@ -509,11 +509,11 @@
 import { GoogleGenAI } from "@google/genai";
 
 // ── GEMINI CONFIGURATION ──
-const API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+const API_KEY = "AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8";
 let geminiModel = null;
 
 // Initialize Gemini only if key is provided
-if (API_KEY && API_KEY !== "PASTE_YOUR_GEMINI_API_KEY_HERE") {
+if (API_KEY && API_KEY !== "AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8") {
   const genAI = new GoogleGenAI(API_KEY);
   geminiModel = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
