@@ -101,7 +101,6 @@
     flex-shrink: 0;
   }
   .filter-input {
-    flex: 1;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -113,6 +112,7 @@
     transition: border-color 0.2s;
   }
   .filter-input:focus { border-color: var(--accent2); }
+  select.filter-input { cursor: pointer; color: var(--muted); width: 130px; }
 
   .table-wrap {
     flex: 1;
@@ -219,9 +219,21 @@
       <span class="panel-title">Film log</span>
       <span id="rowCount" style="font-family:'DM Mono'; color:var(--muted)">—</span>
     </div>
+    
     <div class="filter-row">
-      <input class="filter-input" id="searchInput" placeholder="Search movies, directors, writers..." oninput="applyFilter()" />
+      <select class="filter-input" id="categorySelect" onchange="applyFilter()">
+        <option value="all">All Fields</option>
+        <option value="movie">Movie</option>
+        <option value="director">Director</option>
+        <option value="screenwriter">Writer</option>
+        <option value="cinematography">Camera</option>
+        <option value="music">Music</option>
+        <option value="country">Country</option>
+      </select>
+      <input class="filter-input" id="searchInput" placeholder="Search entries..." oninput="applyFilter()" style="flex:1" />
+      <input class="filter-input" id="yearSearch" placeholder="Year" oninput="applyFilter()" style="width:70px" />
     </div>
+
     <div class="table-wrap">
       <table>
         <thead>
@@ -250,7 +262,7 @@
     <div class="panel-header"><span class="panel-title">Ask about your data</span></div>
     <div class="messages" id="messages"></div>
     <div class="input-row">
-      <input class="filter-input" placeholder="Chat feature (Claude API required)..." disabled />
+      <input class="filter-input" placeholder="Chat feature (Claude API required)..." disabled style="flex:1" />
     </div>
   </div>
 </div>
@@ -258,7 +270,6 @@
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
 
-// Proxies to bypass CORS
 const PROXIES = [
   (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
@@ -300,21 +311,21 @@ function parseCSV(text) {
   const lines = text.split('\n').filter(l => l.trim() !== '');
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
   
+  let lastYearFound = "";
+
   return lines.slice(1).map(line => {
     const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
     const obj = {};
     headers.forEach((h, i) => {
-      // Mapping common variations to our internal keys
-      const keyMap = {
-        'year': 'year',
-        'movie': 'movie',
-        'director': 'director',
-        'screenwriter': 'screenwriter',
-        'cinematography': 'cinematography',
-        'music': 'music',
-        'country': 'country'
-      };
-      obj[keyMap[h] || h] = values[i] || '';
+      // Logic to repeat the year if it is blank in the Google Sheet (forward-filling)
+      if (h === 'year') {
+          if (values[i] && values[i].trim() !== "") {
+              lastYearFound = values[i];
+          }
+          obj['year'] = lastYearFound;
+      } else {
+          obj[h] = values[i] || '';
+      }
     });
     return obj;
   });
@@ -340,14 +351,37 @@ function updateStats(rows) {
   document.getElementById('statMovies').textContent = rows.length;
   document.getElementById('statYears').textContent = new Set(rows.map(r => r.year).filter(Boolean)).size;
   document.getElementById('statDirectors').textContent = new Set(rows.map(r => r.director).filter(Boolean)).size;
-  document.getElementById('statCountries').textContent = new Set(rows.map(r => r.country).filter(Boolean)).size;
+
+  // Deduction Logic for Countries:
+  // Split entries like "United Kingdom, United States" into individual items and deduplicate globally.
+  const individualCountries = new Set();
+  rows.forEach(r => {
+    if (r.country) {
+      const parts = r.country.split(',').map(c => c.trim()).filter(Boolean);
+      parts.forEach(c => individualCountries.add(c));
+    }
+  });
+  document.getElementById('statCountries').textContent = individualCountries.size;
 }
 
 function applyFilter() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = allData.filter(r => 
-    Object.values(r).some(val => String(val).toLowerCase().includes(q))
-  );
+  const category = document.getElementById('categorySelect').value;
+  const searchText = document.getElementById('searchInput').value.toLowerCase();
+  const yearText = document.getElementById('yearSearch').value.toLowerCase();
+
+  const filtered = allData.filter(r => {
+    const matchesYear = String(r.year).toLowerCase().includes(yearText);
+    let matchesSearch = false;
+
+    if (category === 'all') {
+      matchesSearch = Object.values(r).some(val => String(val).toLowerCase().includes(searchText));
+    } else {
+      matchesSearch = String(r[category]).toLowerCase().includes(searchText);
+    }
+
+    return matchesYear && matchesSearch;
+  });
+
   renderTable(filtered);
 }
 
