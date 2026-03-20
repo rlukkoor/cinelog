@@ -1,122 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Cinelog | Gemini Powered</title>
-    <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://esm.run/@google/genai"
-      }
-    }
-    </script>
-    <style>
-        /* Minimal styles to ensure visibility */
-        body { background: #0d0d0d; color: #f0ede8; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
-        #loadingOverlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; justify-content: center; align-items: center; z-index: 100; }
-        .panel { flex: 1; border: 1px solid #333; overflow-y: auto; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { border-bottom: 1px solid #333; padding: 8px; text-align: left; }
-        .msg { margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #1e1e1e; }
-        .ai { border-left: 3px solid #e8c97a; }
-        input { width: 80%; padding: 10px; background: #222; color: #fff; border: 1px solid #444; }
-        button { padding: 10px; cursor: pointer; background: #e8c97a; border: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinelog | Data & AI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --muted: #888;
+    --accent: #e8c97a;
+    --accent2: #c9a84c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--accent);
+  }
+
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Left Side: Data Panel */
+  .data-panel {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    flex: 1;
+    overflow: auto;
+    background: var(--bg);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 800px;
+  }
+
+  thead { position: sticky; top: 0; background: var(--surface); z-index: 2; }
+
+  th {
+    text-align: left;
+    padding: 10px 20px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td { padding: 10px 20px; border-bottom: 1px solid var(--border); }
+
+  /* Right Side: Chat Panel */
+  .chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #0a0a0a;
+  }
+
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono';
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .msg-bubble {
+    background: var(--surface2);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .input-area {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+
+  input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  button {
+    background: var(--accent);
+    color: black;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .stats-row {
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .stat { flex: 1; padding: 10px 20px; border-right: 1px solid var(--border); }
+  .stat-val { font-family: 'DM Serif Display'; font-size: 20px; color: var(--accent); }
+  .stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; font-family: 'DM Mono'; }
+</style>
 </head>
 <body>
 
-<div id="loadingOverlay"><h1>Loading Cinelog...</h1></div>
+<div class="topbar">
+  <div class="logo">Cinelog</div>
+  <div id="status" style="font-size:11px; font-family:'DM Mono'; color:var(--muted);">Syncing...</div>
+</div>
 
-<div class="panel" id="dataPanel">
-    <h2>Film Log</h2>
-    <table>
-        <thead><tr><th>Year</th><th>Movie</th><th>Director</th><th>Country</th></tr></thead>
+<div class="layout">
+  <div class="data-panel">
+    <div class="panel-header">Film Database</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Movie</th>
+            <th>Director</th>
+            <th>Country</th>
+          </tr>
+        </thead>
         <tbody id="tableBody"></tbody>
-    </table>
+      </table>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="statMovies">0</div><div class="stat-label">Movies</div></div>
+      <div class="stat"><div class="stat-val" id="statYears">0</div><div class="stat-label">Years</div></div>
+    </div>
+  </div>
+
+  <div class="chat-panel">
+    <div class="panel-header">Gemini Assistant (Offline)</div>
+    <div id="messages">
+        <div class="msg-bubble">
+            <strong>System:</strong> AI analysis is currently disconnected. The data table on the left is live.
+        </div>
+    </div>
+    <div class="input-area">
+      <input type="text" placeholder="AI analysis disabled..." disabled>
+      <button disabled>Ask</button>
+    </div>
+  </div>
 </div>
 
-<div class="panel" id="chatPanel">
-    <h2>Ask Gemini</h2>
-    <div id="messages" style="height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
-    <input type="text" id="chatInput" placeholder="Ask about your movies...">
-    <button id="sendBtn">Ask</button>
-</div>
+<script>
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
 
-<script type="module">
-    import { GoogleGenAI } from "@google/genai";
-
-    // --- PASTE YOUR KEY HERE ---
-    const API_KEY = AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8; 
+async function loadData() {
+  try {
+    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`);
+    const csv = await res.text();
+    const lines = csv.trim().split('\n').slice(1);
     
-    let genAI, model, allRows = [];
+    const tbody = document.getElementById('tableBody');
+    let movies = 0;
+    let years = new Set();
 
-    // Initialize Gemini safely
-    try {
-        if (API_KEY && API_KEY.length > 10) {
-            genAI = new GoogleGenAI(API_KEY);
-            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            console.log("Gemini Initialized");
-        }
-    } catch (e) { console.error("Gemini Init Failed", e); }
+    tbody.innerHTML = lines.map(line => {
+      const col = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+      if (!col[1] || col[0].toLowerCase().includes('total')) return '';
+      
+      movies++;
+      years.add(col[0]);
 
-    // Fetch Data
-    async function loadData() {
-        const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
-        try {
-            const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-            const text = await res.text();
-            const lines = text.split('\n').slice(1);
-            
-            allRows = lines.map(line => {
-                const parts = line.split(',');
-                return { 
-                    year: parts[0]?.replace(/"/g, ''), 
-                    movie: parts[1]?.replace(/"/g, ''), 
-                    director: parts[2]?.replace(/"/g, ''), 
-                    country: parts[6]?.replace(/"/g, '') 
-                };
-            }).filter(r => r.movie && r.movie.length > 2);
+      return `
+        <tr>
+          <td style="color:var(--accent); font-family:'DM Mono';">${col[0]}</td>
+          <td><strong>${col[1]}</strong></td>
+          <td>${col[2] || '—'}</td>
+          <td style="color:var(--muted);">${col[6] || '—'}</td>
+        </tr>
+      `;
+    }).join('');
 
-            document.getElementById('tableBody').innerHTML = allRows.map(r => 
-                `<tr><td>${r.year}</td><td>${r.movie}</td><td>${r.director}</td><td>${r.country}</td></tr>`
-            ).join('');
+    document.getElementById('statMovies').innerText = movies;
+    document.getElementById('statYears').innerText = years.size;
+    document.getElementById('status').innerText = "Database Connected";
+  } catch (e) {
+    document.getElementById('status').innerText = "Connection Error";
+  }
+}
 
-            document.getElementById('loadingOverlay').style.display = 'none';
-        } catch (e) {
-            document.getElementById('loadingOverlay').innerHTML = "<h1>Error loading data. Check console.</h1>";
-        }
-    }
-
-    // Chat Function
-    window.sendMessage = async () => {
-        const input = document.getElementById('chatInput');
-        const msg = input.value;
-        if (!msg || !model) return;
-
-        addMessage("You", msg);
-        input.value = '';
-
-        const context = allRows.slice(0, 50).map(r => `${r.movie} (${r.year}) by ${r.director}`).join(', ');
-        const prompt = `Data: ${context}\n\nQuestion: ${msg}`;
-
-        try {
-            const result = await model.generateContent(prompt);
-            addMessage("Gemini", result.response.text());
-        } catch (e) {
-            addMessage("Error", "Could not connect to Gemini. Check your API key.");
-        }
-    };
-
-    function addMessage(sender, text) {
-        const div = document.createElement('div');
-        div.className = `msg ${sender === 'Gemini' ? 'ai' : ''}`;
-        div.innerHTML = `<strong>${sender}:</strong> ${text}`;
-        document.getElementById('messages').appendChild(div);
-    }
-
-    document.getElementById('sendBtn').onclick = window.sendMessage;
-    loadData();
+loadData();
 </script>
-
 </body>
 </html>
