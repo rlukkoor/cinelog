@@ -126,11 +126,10 @@
   }
   select.filter-input option { background: #1e1e1e; color: #f0ede8; }
 
-  /* ── UPDATED TABLE SCROLLING ── */
   .table-wrap {
     flex: 1;
     overflow-y: auto;
-    overflow-x: auto; /* Enable horizontal scrolling */
+    overflow-x: auto;
     background: var(--bg);
   }
   .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -139,10 +138,10 @@
 
   table {
     width: 100%;
-    min-width: 800px; /* Ensure table stays wide enough to trigger scrolling if container is small */
+    min-width: 900px;
     border-collapse: collapse;
     font-size: 12px;
-    table-layout: fixed; /* Keep column widths consistent */
+    table-layout: fixed;
   }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 2; }
   th {
@@ -165,16 +164,14 @@
     text-overflow: ellipsis;
   }
   
-  /* Setting specific widths for columns to ensure layout is balanced during scroll */
   .col-year { width: 60px; }
-  .col-movie { width: 200px; }
-  .col-dir { width: 140px; }
-  .col-writer { width: 140px; }
-  .col-camera { width: 140px; }
-  .col-music { width: 140px; }
-  .col-country { width: 120px; }
+  .col-movie { width: 220px; }
+  .col-dir { width: 160px; }
+  .col-writer { width: 160px; }
+  .col-camera { width: 160px; }
+  .col-music { width: 160px; }
+  .col-country { width: 130px; }
 
-  tr.empty-year td { color: #444; font-style: italic; }
   tr:hover td { background: var(--surface2); }
   td.year-col {
     font-family: 'DM Mono', monospace;
@@ -547,7 +544,7 @@ async function loadData() {
       isFirstLoad = false;
     }
     const pill = document.getElementById('statusPill');
-    const count = allRows.filter(r => r.movie !== 'No movies logged yet').length;
+    const count = allRows.length;
     pill.textContent = `${count} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
     pill.className = 'status-pill loaded';
   } catch (e) {
@@ -584,16 +581,33 @@ function cleanRows(rows) {
   let lastYear = '';
   return rows.map(r => {
     const rawYear = r['Year'] ? r['Year'].replace(/^"|"$/g, '').trim() : '';
-    if (rawYear.toLowerCase().includes('total') || rawYear.toLowerCase().includes('movies')) return null;
-    const yearNum = parseInt(rawYear);
-    if (!isNaN(yearNum)) lastYear = yearNum;
-    else if (!rawYear) r['Year'] = lastYear;
-    else return null;
-
     const movie = r['Movie'] ? r['Movie'].replace(/^"|"$/g, '').trim() : '';
+
+    // Filter out summary rows, totals, and empty placeholder rows
+    if (
+      rawYear.toLowerCase().includes('total') || 
+      rawYear.toLowerCase().includes('movies') ||
+      movie.toLowerCase().includes('no movies logged yet') ||
+      movie.match(/^\d+$/) ||
+      (!rawYear && !movie)
+    ) {
+      return null;
+    }
+
+    const yearNum = parseInt(rawYear);
+    if (!isNaN(yearNum)) {
+      lastYear = yearNum;
+    } else if (rawYear === '' && lastYear !== '') {
+      r['Year'] = lastYear;
+    } else {
+      return null;
+    }
+
+    if (!movie || movie === '') return null;
+
     return {
       year: lastYear,
-      movie: movie || 'No movies logged yet',
+      movie: movie,
       director: r['Director'] ? r['Director'].replace(/^"|"$/g, '').trim() : '',
       screenwriter: r['Screenwriter'] ? r['Screenwriter'].replace(/^"|"$/g, '').trim() : '',
       cinematography: r['Cinematography'] ? r['Cinematography'].replace(/^"|"$/g, '').trim() : '',
@@ -606,10 +620,9 @@ function cleanRows(rows) {
 function renderTable(rows) {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = rows.map(r => {
-    const isEmpty = r.movie === 'No movies logged yet';
-    return `<tr class="${isEmpty ? 'empty-year' : ''}">
+    return `<tr>
       <td class="year-col">${r.year}</td>
-      <td title="${r.movie}">${r.movie}</td>
+      <td title="${r.movie}"><strong>${r.movie}</strong></td>
       <td title="${r.director}">${r.director || '<span style="color:#444">—</span>'}</td>
       <td title="${r.screenwriter}">${r.screenwriter || '<span style="color:#444">—</span>'}</td>
       <td title="${r.cinematography}">${r.cinematography || '<span style="color:#444">—</span>'}</td>
@@ -621,18 +634,16 @@ function renderTable(rows) {
 }
 
 function updateStats(rows) {
-  const movies = rows.filter(r => r.movie !== 'No movies logged yet');
-  const years = new Set(movies.map(r => r.year)).size;
-  const directors = new Set(movies.map(r => r.director).filter(Boolean)).size;
-
+  const years = new Set(rows.map(r => r.year)).size;
+  const directors = new Set(rows.map(r => r.director).filter(Boolean)).size;
   const countrySet = new Set();
-  movies.forEach(r => {
+  rows.forEach(r => {
     if (r.country) {
       r.country.split(',').map(c => c.trim()).filter(Boolean).forEach(c => countrySet.add(c));
     }
   });
 
-  document.getElementById('statMovies').textContent = movies.length;
+  document.getElementById('statMovies').textContent = rows.length;
   document.getElementById('statYears').textContent = years;
   document.getElementById('statCountries').textContent = countrySet.size;
   document.getElementById('statDirectors').textContent = directors;
@@ -667,16 +678,14 @@ document.getElementById('yearInput').addEventListener('input', applyFilter);
 document.getElementById('columnSelect').addEventListener('change', applyFilter);
 
 function buildDataSummary() {
-  const movies = allRows.filter(r => r.movie !== 'No movies logged yet');
-  return movies.map(r =>
-    `${r.year} | ${r.movie} | ${r.director || 'Unknown'} | ${r.screenwriter || 'Unknown'} | ${r.cinematography || 'None credited'} | ${r.music || 'None credited'} | ${r.country || 'Unknown'}`
+  return allRows.map(r =>
+    `${r.year} | ${r.movie} | ${r.director || 'Unknown'} | ${r.screenwriter || 'Unknown'} | ${r.cinematography || 'None'} | ${r.music || 'None'} | ${r.country || 'Unknown'}`
   ).join('\n');
 }
 
 function addMessage(role, text) {
   const empty = document.getElementById('emptyState');
   if (empty) empty.remove();
-
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = 'msg';
@@ -724,9 +733,9 @@ async function sendMessage(overrideText) {
   conversationHistory.push({ role: 'user', content: question });
 
   const dataContext = buildDataSummary();
-  const systemPrompt = `You are a film data analyst helping a user explore their movie-watching log. The log has these columns: Year | Movie | Director | Screenwriter | Cinematography | Music | Country. Answer clearly and concisely. 
+  const systemPrompt = `You are a film data analyst. The log has these columns: Year | Movie | Director | Screenwriter | Cinematography | Music | Country. Answer clearly and concisely.
 
-Log Data:
+Data:
 ${dataContext}`;
 
   try {
@@ -748,7 +757,7 @@ ${dataContext}`;
     addMessage('ai', reply);
   } catch (e) {
     removeTyping();
-    addMessage('ai', 'Error connecting to Claude. Please check your API key.');
+    addMessage('ai', 'Error connecting to Claude.');
   }
 
   document.getElementById('sendBtn').disabled = false;
