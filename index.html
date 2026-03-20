@@ -71,7 +71,7 @@
 
   /* ── Left: data panel ── */
   .data-panel {
-    width: 52%;
+    width: 55%;
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border);
@@ -114,16 +114,6 @@
   }
   .filter-input:focus { border-color: var(--accent2); }
   .filter-input::placeholder { color: var(--muted); }
-  select.filter-input {
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-color: var(--surface2);
-    padding-right: 28px;
-  }
 
   .table-wrap {
     flex: 1;
@@ -136,13 +126,14 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 11px;
+    table-layout: fixed;
   }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 2; }
   th {
     text-align: left;
-    padding: 10px 20px;
-    font-size: 10px;
+    padding: 10px 15px;
+    font-size: 9px;
     font-family: 'DM Mono', monospace;
     color: var(--muted);
     text-transform: uppercase;
@@ -151,17 +142,15 @@
     font-weight: 400;
   }
   td {
-    padding: 9px 20px;
+    padding: 8px 15px;
     border-bottom: 1px solid var(--border);
     color: var(--text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px;
   }
   tr:hover td { background: var(--surface2); }
-  td.year-col { font-family: 'DM Mono', monospace; color: var(--accent); font-size: 11px; }
-  td.country-col { font-size: 11px; color: var(--muted); }
+  td.year-col { font-family: 'DM Mono', monospace; color: var(--accent); }
 
   .stats-row {
     display: flex;
@@ -170,12 +159,12 @@
   }
   .stat {
     flex: 1;
-    padding: 10px 20px;
+    padding: 10px 15px;
     border-right: 1px solid var(--border);
   }
   .stat:last-child { border-right: none; }
-  .stat-val { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); }
-  .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; margin-top: 2px; }
+  .stat-val { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); }
+  .stat-label { font-size: 9px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; }
 
   /* ── Right: chat panel ── */
   .chat-panel {
@@ -201,8 +190,6 @@
     line-height: 1.65;
     color: var(--text);
   }
-  .msg-bubble.user { background: var(--surface); border-color: var(--border2); align-self: flex-end; max-width: 85%; }
-
   .input-row {
     display: flex;
     gap: 8px;
@@ -210,27 +197,7 @@
     border-top: 1px solid var(--border);
     flex-shrink: 0;
   }
-  .chat-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 13px;
-    outline: none;
-  }
-  .send-btn {
-    background: var(--accent);
-    color: #0d0d0d;
-    border: none;
-    border-radius: 8px;
-    padding: 0 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
 
-  /* ── Loading Overlay ── */
   .loading-overlay {
     position: absolute;
     inset: 0;
@@ -239,7 +206,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
     z-index: 10;
   }
   .logo-big { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--accent); }
@@ -249,44 +215,44 @@
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="logo-big">Cinelog</div>
-  <div class="loading-text" id="loadingText">Fetching your film log...</div>
+  <div id="loadingText" style="font-family:'DM Mono'; font-size:12px; color:var(--muted); margin-top:10px;">Connecting to Google...</div>
 </div>
 
 <div class="topbar">
   <div class="logo">Cinelog <span>film log analyst</span></div>
-  <div class="status-pill" id="statusPill">loading...</div>
+  <div class="status-pill" id="statusPill">waiting...</div>
 </div>
 
 <div class="layout">
   <div class="data-panel">
     <div class="panel-header">
       <span class="panel-title">Film log</span>
-      <span id="rowCount">—</span>
+      <span id="rowCount" style="font-family:'DM Mono'; color:var(--muted)">—</span>
     </div>
     <div class="filter-row">
-      <select class="filter-input" id="columnSelect" style="width:150px;flex:none">
-        <option value="all">All columns</option>
-        <option value="movie">Movie</option>
-        <option value="director">Director</option>
-      </select>
-      <input class="filter-input" id="searchInput" placeholder="Search..." />
+      <input class="filter-input" id="searchInput" placeholder="Search movies, directors, writers..." oninput="applyFilter()" />
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th style="width:52px">Year</th>
+            <th style="width:50px">Year</th>
             <th>Movie</th>
             <th>Director</th>
-            <th>Country</th>
+            <th>Writer</th>
+            <th>Camera</th>
+            <th>Music</th>
+            <th style="width:80px">Country</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val" id="statMovies">—</div><div class="stat-label">Movies</div></div>
-      <div class="stat"><div class="stat-val" id="statYears">—</div><div class="stat-label">Years</div></div>
+      <div class="stat"><div class="stat-val" id="statMovies">0</div><div class="stat-label">Movies</div></div>
+      <div class="stat"><div class="stat-val" id="statDirectors">0</div><div class="stat-label">Directors</div></div>
+      <div class="stat"><div class="stat-val" id="statCountries">0</div><div class="stat-label">Countries</div></div>
+      <div class="stat"><div class="stat-val" id="statYears">0</div><div class="stat-label">Years</div></div>
     </div>
   </div>
 
@@ -294,38 +260,41 @@
     <div class="panel-header"><span class="panel-title">Ask about your data</span></div>
     <div class="messages" id="messages"></div>
     <div class="input-row">
-      <input class="chat-input" id="chatInput" placeholder="Ask a question..." />
-      <button class="send-btn" onclick="sendMessage()">Ask</button>
+      <input class="filter-input" placeholder="Chat feature (Claude API required)..." disabled />
     </div>
   </div>
 </div>
 
 <script>
-// IMPORTANT: Use your published CSV link here
-const SHEET_URL = "YOUR_GITHUB_PAGES_READY_CSV_LINK";
+// Replace this URL with your "Published CSV" link from Google Sheets
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
+let allData = [];
 
 async function loadData() {
   try {
-    const res = await fetch(SHEET_URL);
+    // Using AllOrigins proxy to bypass CORS on GitHub Pages
+    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`);
     const text = await res.text();
-    const rows = parseCSV(text);
-    allRows = rows;
-    renderTable(rows);
+    allData = parseCSV(text);
+    renderTable(allData);
+    updateStats(allData);
     document.getElementById('loadingOverlay').style.display = 'none';
-    document.getElementById('statusPill').textContent = 'loaded';
+    document.getElementById('statusPill').textContent = 'live data active';
     document.getElementById('statusPill').classList.add('loaded');
   } catch (e) {
-    document.getElementById('loadingText').textContent = 'Error loading data.';
+    document.getElementById('loadingText').textContent = "Failed to sync. Ensure sheet is published to web.";
   }
 }
 
 function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
+  const lines = text.split('\n').filter(l => l.trim() !== '');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+  
   return lines.slice(1).map(line => {
-    const vals = line.split(',');
+    // Regex to handle commas inside quotes in CSV data
+    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
     const obj = {};
-    headers.forEach((h, i) => obj[h.toLowerCase()] = vals[i]);
+    headers.forEach((h, i) => obj[h] = values[i] || '');
     return obj;
   });
 }
@@ -335,10 +304,30 @@ function renderTable(rows) {
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td class="year-col">${r.year || ''}</td>
-      <td>${r.movie || ''}</td>
+      <td title="${r.movie}"><strong>${r.movie || ''}</strong></td>
       <td>${r.director || ''}</td>
-      <td class="country-col">${r.country || ''}</td>
-    </tr>`).join('');
+      <td>${r.screenwriter || ''}</td>
+      <td>${r.cinematography || ''}</td>
+      <td>${r.music || ''}</td>
+      <td style="color:var(--muted); font-size:10px">${r.country || ''}</td>
+    </tr>
+  `).join('');
+  document.getElementById('rowCount').textContent = `${rows.length} ENTRIES`;
+}
+
+function updateStats(rows) {
+  document.getElementById('statMovies').textContent = rows.length;
+  document.getElementById('statYears').textContent = new Set(rows.map(r => r.year)).size;
+  document.getElementById('statDirectors').textContent = new Set(rows.map(r => r.director).filter(Boolean)).size;
+  document.getElementById('statCountries').textContent = new Set(rows.map(r => r.country).filter(Boolean)).size;
+}
+
+function applyFilter() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allData.filter(r => 
+    Object.values(r).some(val => String(val).toLowerCase().includes(q))
+  );
+  renderTable(filtered);
 }
 
 loadData();
