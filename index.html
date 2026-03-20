@@ -1,411 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cinelog</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0d0d0d;
-    --surface: #161616;
-    --surface2: #1e1e1e;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0ede8;
-    --muted: #888;
-    --accent: #e8c97a;
-    --accent2: #c9a84c;
-    --danger: #e87a7a;
-    --success: #7ae8b0;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* ── Top bar ── */
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    height: 52px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
-  }
-  .logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    color: var(--accent);
-    letter-spacing: 0.02em;
-  }
-  .logo span { font-style: italic; color: var(--muted); font-size: 13px; margin-left: 8px; font-family: 'DM Sans', sans-serif; }
-  .status-pill {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    padding: 4px 10px;
-    border-radius: 99px;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-  }
-  .status-pill.loaded { border-color: var(--success); color: var(--success); }
-  .status-pill.error { border-color: var(--danger); color: var(--danger); }
-
-  /* ── Layout ── */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  /* ── Left: data panel ── */
-  .data-panel {
-    width: 52%;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  .panel-header {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .panel-title {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  .filter-row {
-    display: flex;
-    gap: 8px;
-    padding: 10px 20px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .filter-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 10px;
-    color: var(--text);
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .filter-input:focus { border-color: var(--accent2); }
-  .filter-input::placeholder { color: var(--muted); }
-  select.filter-input {
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-color: var(--surface2);
-    padding-right: 28px;
-  }
-  select.filter-input option { background: #1e1e1e; color: #f0ede8; }
-
-  .table-wrap {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: auto;
-    background: var(--bg);
-  }
-  .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
-  .table-wrap::-webkit-scrollbar-track { background: transparent; }
-  .table-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-  table {
-    width: 100%;
-    min-width: 900px;
-    border-collapse: collapse;
-    font-size: 12px;
-    table-layout: fixed;
-  }
-  thead { position: sticky; top: 0; background: var(--surface); z-index: 2; }
-  th {
-    text-align: left;
-    padding: 10px 20px;
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    border-bottom: 1px solid var(--border);
-    font-weight: 400;
-  }
-  td {
-    padding: 9px 20px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .col-year { width: 60px; }
-  .col-movie { width: 220px; }
-  .col-dir { width: 160px; }
-  .col-writer { width: 160px; }
-  .col-camera { width: 160px; }
-  .col-music { width: 160px; }
-  .col-country { width: 130px; }
-
-  tr:hover td { background: var(--surface2); }
-  td.year-col {
-    font-family: 'DM Mono', monospace;
-    color: var(--accent);
-    font-size: 11px;
-  }
-  td.country-col {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .stats-row {
-    display: flex;
-    gap: 0;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .stat {
-    flex: 1;
-    padding: 10px 20px;
-    border-right: 1px solid var(--border);
-  }
-  .stat:last-child { border-right: none; }
-  .stat-val {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--accent);
-  }
-  .stat-label {
-    font-size: 10px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-top: 2px;
-  }
-
-  /* ── Right: chat panel ── */
-  .chat-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .messages::-webkit-scrollbar { width: 4px; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-  .msg {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    animation: fadeUp 0.3s ease;
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .msg-label {
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-  .msg-label.ai { color: var(--accent2); }
-  .msg-bubble {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 13px;
-    line-height: 1.65;
-    color: var(--text);
-    max-width: 100%;
-  }
-  .msg-bubble.user {
-    background: var(--surface);
-    border-color: var(--border2);
-    align-self: flex-end;
-    max-width: 85%;
-  }
-  .msg-bubble.ai { border-color: rgba(232,201,122,0.2); }
-  .msg-bubble strong { color: var(--accent); font-weight: 500; }
-
-  .typing {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    padding: 4px 0;
-  }
-  .typing span {
-    width: 5px; height: 5px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: bounce 1.2s infinite;
-    opacity: 0.6;
-  }
-  .typing span:nth-child(2) { animation-delay: 0.2s; }
-  .typing span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes bounce {
-    0%, 60%, 100% { transform: translateY(0); }
-    30% { transform: translateY(-5px); }
-  }
-
-  .suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 0 20px 12px;
-  }
-  .suggestion-chip {
-    font-size: 11px;
-    padding: 5px 10px;
-    border: 1px solid var(--border2);
-    border-radius: 99px;
-    color: var(--muted);
-    cursor: pointer;
-    background: transparent;
-    transition: all 0.15s;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .suggestion-chip:hover {
-    border-color: var(--accent2);
-    color: var(--accent);
-    background: rgba(232,201,122,0.05);
-  }
-
-  .input-row {
-    display: flex;
-    gap: 8px;
-    padding: 12px 20px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .chat-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
-    resize: none;
-    height: 42px;
-  }
-  .chat-input:focus { border-color: var(--accent2); }
-  .chat-input::placeholder { color: var(--muted); }
-  .send-btn {
-    background: var(--accent);
-    color: #0d0d0d;
-    border: none;
-    border-radius: 8px;
-    padding: 0 16px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s;
-    flex-shrink: 0;
-  }
-  .send-btn:hover { background: var(--accent2); }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .empty-state {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    gap: 8px;
-    padding: 40px;
-    text-align: center;
-  }
-  .empty-state .icon {
-    font-family: 'DM Serif Display', serif;
-    font-size: 40px;
-    color: var(--border2);
-  }
-  .empty-state p { font-size: 13px; line-height: 1.6; }
-
-  .loading-overlay {
-    position: absolute;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    z-index: 10;
-  }
-  .loading-overlay .logo-big {
-    font-family: 'DM Serif Display', serif;
-    font-size: 36px;
-    color: var(--accent);
-  }
-  .loading-bar {
-    width: 200px;
-    height: 2px;
-    background: var(--border);
-    border-radius: 1px;
-    overflow: hidden;
-  }
-  .loading-bar-inner {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 1px;
-    animation: loadBar 1.8s ease-in-out infinite;
-  }
-  @keyframes loadBar {
-    0% { width: 0%; margin-left: 0; }
-    50% { width: 60%; margin-left: 20%; }
-    100% { width: 0%; margin-left: 100%; }
-  }
-  .loading-text {
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-  }
-</style>
-
 <script type="importmap">
   {
     "imports": {
@@ -413,111 +5,20 @@
     }
   }
 </script>
-</head>
-<body>
-
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="logo-big">Cinelog</div>
-  <div class="loading-bar"><div class="loading-bar-inner"></div></div>
-  <div class="loading-text" id="loadingText">Fetching your film log...</div>
-</div>
-
-<div class="topbar">
-  <div class="logo">Cinelog <span>film log analyst</span></div>
-  <div class="status-pill" id="statusPill">loading...</div>
-</div>
-
-<div class="layout">
-  <div class="data-panel">
-    <div class="panel-header">
-      <span class="panel-title">Film log</span>
-      <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace" id="rowCount">—</span>
-    </div>
-    <div class="filter-row">
-      <select class="filter-input" id="columnSelect" style="width:150px;flex:none">
-        <option value="all">All columns</option>
-        <option value="movie">Movie</option>
-        <option value="director">Director</option>
-        <option value="screenwriter">Screenwriter</option>
-        <option value="cinematography">Cinematography</option>
-        <option value="music">Music</option>
-        <option value="country">Country</option>
-      </select>
-      <input class="filter-input" id="searchInput" placeholder="Search..." />
-      <input class="filter-input" id="yearInput" placeholder="Year..." style="width:80px;flex:none" />
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="col-year">Year</th>
-            <th class="col-movie">Movie</th>
-            <th class="col-dir">Director</th>
-            <th class="col-writer">Screenwriter</th>
-            <th class="col-camera">Cinematography</th>
-            <th class="col-music">Music</th>
-            <th class="col-country">Country</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-val" id="statMovies">—</div>
-        <div class="stat-label">Movies</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val" id="statYears">—</div>
-        <div class="stat-label">Years</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val" id="statCountries">—</div>
-        <div class="stat-label">Countries</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val" id="statDirectors">—</div>
-        <div class="stat-label">Directors</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="chat-panel">
-    <div class="panel-header">
-      <span class="panel-title">Ask Gemini</span>
-    </div>
-    <div class="messages" id="messages">
-      <div class="empty-state" id="emptyState">
-        <div class="icon">◈</div>
-        <p>Ask Gemini about your film data.<br>It will analyze your log and provide insights.</p>
-      </div>
-    </div>
-    <div class="suggestions" id="suggestions">
-      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Which country appears most?</button>
-      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Most frequent director?</button>
-      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Which decade has the most films?</button>
-      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Films with no credited musician?</button>
-    </div>
-    <div class="input-row">
-      <input class="chat-input" id="chatInput" placeholder="Ask about your films..." />
-      <button class="send-btn" id="sendBtn" onclick="window.sendMessage()">Ask</button>
-    </div>
-  </div>
-</div>
 
 <script type="module">
 import { GoogleGenAI } from "@google/genai";
 
-// ── GEMINI CONFIGURATION ──
-const API_KEY = "AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8";
-let geminiModel = null;
+// ── 1. CONFIGURATION (PASTE KEY HERE) ──
+const API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
 
-// Initialize Gemini only if key is provided
-if (API_KEY && API_KEY !== "AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8") {
+// ── 2. INITIALIZE GEMINI ──
+let geminiModel = null;
+if (API_KEY && API_KEY !== "PASTE_YOUR_GEMINI_API_KEY_HERE") {
   const genAI = new GoogleGenAI(API_KEY);
   geminiModel = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
-    systemInstruction: "You are a specialized film log analyst. Use the provided text summary to answer questions. Be insightful, concise, and bold key names or numbers."
+    systemInstruction: "You are a film data analyst. Use the provided log to answer questions concisely. Use **bold** for key names/numbers."
   });
 }
 
@@ -532,68 +33,51 @@ let filteredRows = [];
 let isFirstLoad = true;
 let chatHistory = [];
 
+// ── DATA LOADING LOGIC ──
 async function loadData() {
   if (isFirstLoad) document.getElementById('loadingText').textContent = 'Fetching your film log...';
-
   let text = null;
   for (const proxyFn of PROXIES) {
     try {
       const res = await fetch(proxyFn(SHEET_URL));
       if (!res.ok) continue;
       const buf = await res.arrayBuffer();
-      const t = new TextDecoder('utf-8').decode(buf);
-      if (t && t.includes(',')) { text = t; break; }
+      text = new TextDecoder('utf-8').decode(buf);
+      if (text && text.includes(',')) break;
     } catch (e) { continue; }
   }
-
-  // Final cleanup and reveal
-  const finalizeLoad = () => {
-    document.getElementById('loadingOverlay').style.display = 'none';
-    isFirstLoad = false;
-  };
 
   if (!text) {
     if (isFirstLoad) {
       document.getElementById('loadingText').textContent = 'Failed to load sheet.';
-      document.getElementById('statusPill').textContent = 'error';
-      document.getElementById('statusPill').classList.add('error');
-      setTimeout(finalizeLoad, 2000);
+      document.getElementById('loadingOverlay').style.display = 'none';
     }
     return;
   }
 
-  try {
-    const rows = parseCSV(text);
-    allRows = cleanRows(rows);
-    filteredRows = [...allRows];
-    renderTable(filteredRows);
-    updateStats(allRows);
-    
-    const pill = document.getElementById('statusPill');
-    pill.textContent = `${allRows.length} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
-    pill.className = 'status-pill loaded';
-    
-    if (isFirstLoad) finalizeLoad();
-  } catch (e) {
-    console.error(e);
-    if (isFirstLoad) finalizeLoad();
+  const rows = parseCSV(text);
+  allRows = cleanRows(rows);
+  renderTable(allRows);
+  updateStats(allRows);
+  
+  if (isFirstLoad) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    isFirstLoad = false;
   }
+  
+  const pill = document.getElementById('statusPill');
+  pill.textContent = `${allRows.length} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  pill.className = 'status-pill loaded';
 }
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
-    const vals = [];
-    let cur = '', inQ = false;
-    for (let c of line) {
-      if (c === '"') inQ = !inQ;
-      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
-      else cur += c;
-    }
+    const vals = []; let cur = '', inQ = false;
+    for (let c of line) { if (c === '"') inQ = !inQ; else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else cur += c; }
     vals.push(cur.trim());
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    const obj = {}; headers.forEach((h, i) => obj[h] = vals[i] || '');
     return obj;
   });
 }
@@ -601,23 +85,19 @@ function parseCSV(text) {
 function cleanRows(rows) {
   let lastYear = '';
   return rows.map(r => {
-    const rawYear = r['Year'] ? r['Year'].replace(/^"|"$/g, '').trim() : '';
-    const movie = r['Movie'] ? r['Movie'].replace(/^"|"$/g, '').trim() : '';
-    if (rawYear.toLowerCase().includes('total') || movie.match(/^\d+$/) || (!rawYear && !movie) || movie.toLowerCase().includes("no movies logged yet")) return null;
+    const rawYear = r['Year']?.replace(/^"|"$/g, '').trim() || '';
+    if (rawYear.toLowerCase().includes('total')) return null;
     const yearNum = parseInt(rawYear);
     if (!isNaN(yearNum)) lastYear = yearNum;
-    else if (rawYear === '' && lastYear !== '') r['Year'] = lastYear;
-    else return null;
-    if (!movie) return null;
-
+    const movie = r['Movie']?.replace(/^"|"$/g, '').trim() || '';
+    if (!movie || movie.toLowerCase().includes("no movies logged")) return null;
     return {
-      year: lastYear,
-      movie: movie,
-      director: r['Director'] ? r['Director'].replace(/^"|"$/g, '').trim() : '',
-      screenwriter: r['Screenwriter'] ? r['Screenwriter'].replace(/^"|"$/g, '').trim() : '',
-      cinematography: r['Cinematography'] ? r['Cinematography'].replace(/^"|"$/g, '').trim() : '',
-      music: r['Music'] ? r['Music'].replace(/^"|"$/g, '').trim() : '',
-      country: r['Country'] ? r['Country'].replace(/^"|"$/g, '').trim() : '',
+      year: lastYear, movie,
+      director: r['Director']?.replace(/^"|"$/g, '').trim() || '',
+      screenwriter: r['Screenwriter']?.replace(/^"|"$/g, '').trim() || '',
+      cinematography: r['Cinematography']?.replace(/^"|"$/g, '').trim() || '',
+      music: r['Music']?.replace(/^"|"$/g, '').trim() || '',
+      country: r['Country']?.replace(/^"|"$/g, '').trim() || ''
     };
   }).filter(Boolean);
 }
@@ -627,35 +107,26 @@ function renderTable(rows) {
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td class="year-col">${r.year}</td>
-      <td title="${r.movie}"><strong>${r.movie}</strong></td>
-      <td title="${r.director}">${r.director || '—'}</td>
-      <td title="${r.screenwriter}">${r.screenwriter || '—'}</td>
-      <td title="${r.cinematography}">${r.cinematography || '—'}</td>
-      <td title="${r.music}">${r.music || '—'}</td>
-      <td class="country-col">${r.country || ''}</td>
+      <td><strong>${r.movie}</strong></td>
+      <td>${r.director || '—'}</td>
+      <td>${r.screenwriter || '—'}</td>
+      <td>${r.cinematography || '—'}</td>
+      <td>${r.music || '—'}</td>
+      <td class="country-col">${r.country}</td>
     </tr>`).join('');
   document.getElementById('rowCount').textContent = `${rows.length} rows`;
 }
 
 function updateStats(rows) {
-  const years = new Set(rows.map(r => r.year)).size;
-  const directors = new Set(rows.map(r => r.director).filter(Boolean)).size;
-  const countries = new Set();
-  rows.forEach(r => r.country?.split(',').forEach(c => countries.add(c.trim())));
-
   document.getElementById('statMovies').textContent = rows.length;
-  document.getElementById('statYears').textContent = years;
-  document.getElementById('statCountries').textContent = Array.from(countries).filter(Boolean).length;
-  document.getElementById('statDirectors').textContent = directors;
+  document.getElementById('statYears').textContent = new Set(rows.map(r => r.year)).size;
+  document.getElementById('statDirectors').textContent = new Set(rows.map(r => r.director)).size;
+  const cSet = new Set();
+  rows.forEach(r => r.country.split(',').forEach(c => cSet.add(c.trim())));
+  document.getElementById('statCountries').textContent = cSet.size;
 }
 
-function buildDataSummary() {
-  return allRows.map(r =>
-    `${r.year} | ${r.movie} | ${r.director || 'Unknown'} | ${r.screenwriter || 'Unknown'} | ${r.cinematography || 'None'} | ${r.music || 'None'} | ${r.country || 'Unknown'}`
-  ).join('\n');
-}
-
-// ── ATTACH TO WINDOW FOR HTML ACCESS ──
+// ── 3. UPDATED GEMINI CHAT LOGIC ──
 
 window.sendMessage = async function(overrideText) {
   const input = document.getElementById('chatInput');
@@ -672,8 +143,8 @@ window.sendMessage = async function(overrideText) {
   addMessage('user', question);
   addTyping();
 
-  const dataContext = buildDataSummary();
-  const prompt = `Based on this movie log:\n${dataContext}\n\nQuestion: ${question}`;
+  const dataContext = allRows.map(r => `${r.year}|${r.movie}|${r.director}|${r.country}`).join('\n');
+  const prompt = `Film Log:\n${dataContext}\n\nUser Question: ${question}`;
 
   try {
     const chat = geminiModel.startChat({ history: chatHistory });
@@ -687,25 +158,22 @@ window.sendMessage = async function(overrideText) {
     removeTyping();
     addMessage('ai', text);
   } catch (e) {
-    console.error(e);
     removeTyping();
-    addMessage('ai', "Encountered an error. Ensure your API key is valid.");
+    addMessage('ai', "Error: " + e.message);
   }
   document.getElementById('sendBtn').disabled = false;
 };
 
 window.askSuggestion = (btn) => window.sendMessage(btn.textContent);
 
+// Helper functions for UI
 function addMessage(role, text) {
-  const empty = document.getElementById('emptyState');
-  if (empty) empty.remove();
+  const empty = document.getElementById('emptyState'); if (empty) empty.remove();
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = 'msg';
-  div.innerHTML = `
-    <div class="msg-label ${role === 'ai' ? 'ai' : ''}">${role === 'ai' ? 'Gemini' : 'You'}</div>
-    <div class="msg-bubble ${role}">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>
-  `;
+  div.innerHTML = `<div class="msg-label ${role === 'ai' ? 'ai' : ''}">${role === 'ai' ? 'Gemini' : 'You'}</div>
+                   <div class="msg-bubble ${role}">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -713,29 +181,18 @@ function addMessage(role, text) {
 function addTyping() {
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
-  div.className = 'msg';
-  div.id = 'typingIndicator';
-  div.innerHTML = `
-    <div class="msg-label ai">Gemini</div>
-    <div class="msg-bubble ai"><div class="typing"><span></span><span></span><span></span></div></div>
-  `;
+  div.className = 'msg'; div.id = 'typingIndicator';
+  div.innerHTML = `<div class="msg-label ai">Gemini</div>
+                   <div class="msg-bubble ai"><div class="typing"><span></span><span></span><span></span></div></div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-function removeTyping() {
-  const t = document.getElementById('typingIndicator');
-  if (t) t.remove();
-}
+function removeTyping() { const t = document.getElementById('typingIndicator'); if (t) t.remove(); }
 
 document.getElementById('chatInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
 });
 
-// Start initial load
 loadData();
-// Auto-refresh every 2 minutes
-setInterval(loadData, 2 * 60 * 1000);
 </script>
-</body>
-</html>
