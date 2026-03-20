@@ -113,7 +113,6 @@
     transition: border-color 0.2s;
   }
   .filter-input:focus { border-color: var(--accent2); }
-  .filter-input::placeholder { color: var(--muted); }
 
   .table-wrap {
     flex: 1;
@@ -180,15 +179,6 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-  }
-  .msg-bubble {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 13px;
-    line-height: 1.65;
-    color: var(--text);
   }
   .input-row {
     display: flex;
@@ -266,23 +256,43 @@
 </div>
 
 <script>
-// Replace this URL with your "Published CSV" link from Google Sheets
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
+
+// Proxies to bypass CORS
+const PROXIES = [
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+];
+
 let allData = [];
 
 async function loadData() {
-  try {
-    // Using AllOrigins proxy to bypass CORS on GitHub Pages
-    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`);
-    const text = await res.text();
+  const pill = document.getElementById('statusPill');
+  const loadingText = document.getElementById('loadingText');
+  let text = null;
+
+  for (const proxyFn of PROXIES) {
+    try {
+      const res = await fetch(proxyFn(SHEET_URL));
+      if (!res.ok) throw new Error('Proxy error');
+      text = await res.text();
+      if (text && text.includes(',')) break;
+    } catch (e) {
+      console.warn("Retrying with next proxy...");
+    }
+  }
+
+  if (text) {
     allData = parseCSV(text);
     renderTable(allData);
     updateStats(allData);
     document.getElementById('loadingOverlay').style.display = 'none';
-    document.getElementById('statusPill').textContent = 'live data active';
-    document.getElementById('statusPill').classList.add('loaded');
-  } catch (e) {
-    document.getElementById('loadingText').textContent = "Failed to sync. Ensure sheet is published to web.";
+    pill.textContent = 'Live Data Active';
+    pill.classList.add('loaded');
+  } else {
+    loadingText.innerHTML = "Connection Error. Check 'Publish to Web' settings.";
+    pill.textContent = 'error';
+    pill.classList.add('error');
   }
 }
 
@@ -291,10 +301,21 @@ function parseCSV(text) {
   const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
   
   return lines.slice(1).map(line => {
-    // Regex to handle commas inside quotes in CSV data
     const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
     const obj = {};
-    headers.forEach((h, i) => obj[h] = values[i] || '');
+    headers.forEach((h, i) => {
+      // Mapping common variations to our internal keys
+      const keyMap = {
+        'year': 'year',
+        'movie': 'movie',
+        'director': 'director',
+        'screenwriter': 'screenwriter',
+        'cinematography': 'cinematography',
+        'music': 'music',
+        'country': 'country'
+      };
+      obj[keyMap[h] || h] = values[i] || '';
+    });
     return obj;
   });
 }
@@ -317,7 +338,7 @@ function renderTable(rows) {
 
 function updateStats(rows) {
   document.getElementById('statMovies').textContent = rows.length;
-  document.getElementById('statYears').textContent = new Set(rows.map(r => r.year)).size;
+  document.getElementById('statYears').textContent = new Set(rows.map(r => r.year).filter(Boolean)).size;
   document.getElementById('statDirectors').textContent = new Set(rows.map(r => r.director).filter(Boolean)).size;
   document.getElementById('statCountries').textContent = new Set(rows.map(r => r.country).filter(Boolean)).size;
 }
