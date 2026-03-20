@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Cinelog</title>
+    <style>
+        :root { --bg: #0d0d0d; --accent: #e8c97a; --text: #f0ede8; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 40px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: #161616; border: 1px solid #222; padding: 20px; border-radius: 8px; transition: 0.3s; }
+        .card:hover { border-color: var(--accent); }
+        .year { color: var(--accent); font-family: monospace; font-size: 0.9rem; }
+        .title { font-size: 1.2rem; margin: 10px 0; font-weight: bold; }
+        .meta { color: #888; font-size: 0.85rem; }
+        #loader { text-align: center; margin-top: 50px; font-style: italic; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <h1>Film Log <span id="count"></span></h1>
+    <div id="loader">Fetching data from the cloud...</div>
+    <div class="grid" id="app"></div>
+
+    <script>
+        // REPLACE THIS URL with your "Published CSV" link from Google Sheets
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv';
+
+        async function init() {
+            try {
+                const response = await fetch(CSV_URL);
+                const data = await response.text();
+                const rows = parseCSV(data);
+                render(rows);
+            } catch (err) {
+                document.getElementById('loader').innerText = "Error loading data. Ensure sheet is published.";
+            }
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            const headers = lines[0].split(',').map(h => h.trim());
+            return lines.slice(1).map(line => {
+                const values = line.split(',');
+                const entry = {};
+                headers.forEach((h, i) => entry[h] = values[i]);
+                return entry;
+            });
+        }
+
+        function render(items) {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('count').innerText = `(${items.length})`;
+            const container = document.getElementById('app');
+            container.innerHTML = items.map(item => `
+                <div class="card">
+                    <div class="year">${item.Year || 'N/A'}</div>
+                    <div class="title">${item.Movie || 'Untitled'}</div>
+                    <div class="meta">Dir: ${item.Director || 'Unknown'}</div>
+                    <div class="meta">Country: ${item.Country || 'Unknown'}</div>
+                </div>
+            `).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>
