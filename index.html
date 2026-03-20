@@ -10,11 +10,11 @@
 import { GoogleGenAI } from "@google/genai";
 
 // ── 1. CONFIGURATION (PASTE KEY HERE) ──
-const API_KEY = "AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8";
+const API_KEY = AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8;
 
 // ── 2. INITIALIZE GEMINI ──
 let geminiModel = null;
-if (API_KEY && API_KEY !== "AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8") {
+if (API_KEY && API_KEY !== AIzaSyBAZVEbUIJ28jqT8lCUqWKEsvoruAADyn8) {
   const genAI = new GoogleGenAI(API_KEY);
   geminiModel = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
