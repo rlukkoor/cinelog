@@ -650,27 +650,40 @@ function updateStats(rows) {
 }
 
 function applyFilter() {
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const searchInput = document.getElementById('searchInput').value;
   const year = document.getElementById('yearInput').value.trim();
   const col = document.getElementById('columnSelect').value;
+
+  // Function to strip accents: e.g., "Jóhann" becomes "Johann"
+  const normalize = (str) => 
+    String(str)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const search = normalize(searchInput);
+
   filteredRows = allRows.filter(r => {
     let matchSearch = !search;
     if (!matchSearch) {
       if (col === 'all') {
+        // Check all columns by normalizing their content
         matchSearch =
-          r.movie.toLowerCase().includes(search) ||
-          r.director.toLowerCase().includes(search) ||
-          r.country.toLowerCase().includes(search) ||
-          r.screenwriter.toLowerCase().includes(search) ||
-          r.cinematography.toLowerCase().includes(search) ||
-          r.music.toLowerCase().includes(search);
+          normalize(r.movie).includes(search) ||
+          normalize(r.director).includes(search) ||
+          normalize(r.country).includes(search) ||
+          normalize(r.screenwriter).includes(search) ||
+          normalize(r.cinematography).includes(search) ||
+          normalize(r.music).includes(search);
       } else {
-        matchSearch = (r[col] || '').toLowerCase().includes(search);
+        matchSearch = normalize(r[col] || '').includes(search);
       }
     }
+    
     const matchYear = !year || String(r.year).includes(year);
     return matchSearch && matchYear;
   });
+
   renderTable(filteredRows);
 }
 document.getElementById('searchInput').addEventListener('input', applyFilter);
