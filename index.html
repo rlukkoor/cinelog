@@ -493,14 +493,14 @@
       </div>
     </div>
     <div class="suggestions" id="suggestions">
-      <button class="suggestion-chip" onclick="askSuggestion(this)">Which country appears most?</button>
-      <button class="suggestion-chip" onclick="askSuggestion(this)">Most frequent director?</button>
-      <button class="suggestion-chip" onclick="askSuggestion(this)">Which decade has the most films?</button>
-      <button class="suggestion-chip" onclick="askSuggestion(this)">Films with no credited musician?</button>
+      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Which country appears most?</button>
+      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Most frequent director?</button>
+      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Which decade has the most films?</button>
+      <button class="suggestion-chip" onclick="window.askSuggestion(this)">Films with no credited musician?</button>
     </div>
     <div class="input-row">
       <input class="chat-input" id="chatInput" placeholder="Ask about your films..." />
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Ask</button>
+      <button class="send-btn" id="sendBtn" onclick="window.sendMessage()">Ask</button>
     </div>
   </div>
 </div>
@@ -509,13 +509,17 @@
 import { GoogleGenAI } from "@google/genai";
 
 // ── GEMINI CONFIGURATION ──
-// Replace the string below with your actual API Key from AI Studio
 const API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
-const genAI = new GoogleGenAI(API_KEY);
-const geminiModel = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash",
-  systemInstruction: "You are a specialized film log analyst. You help users explore their personal movie-watching history. Use the provided text summary of their log to answer questions. Be insightful, concise, and bold key names or numbers."
-});
+let geminiModel = null;
+
+// Initialize Gemini only if key is provided
+if (API_KEY && API_KEY !== "PASTE_YOUR_GEMINI_API_KEY_HERE") {
+  const genAI = new GoogleGenAI(API_KEY);
+  geminiModel = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: "You are a specialized film log analyst. Use the provided text summary to answer questions. Be insightful, concise, and bold key names or numbers."
+  });
+}
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
 const PROXIES = [
@@ -542,12 +546,18 @@ async function loadData() {
     } catch (e) { continue; }
   }
 
+  // Final cleanup and reveal
+  const finalizeLoad = () => {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    isFirstLoad = false;
+  };
+
   if (!text) {
     if (isFirstLoad) {
       document.getElementById('loadingText').textContent = 'Failed to load sheet.';
       document.getElementById('statusPill').textContent = 'error';
       document.getElementById('statusPill').classList.add('error');
-      setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; isFirstLoad = false; }, 2000);
+      setTimeout(finalizeLoad, 2000);
     }
     return;
   }
@@ -558,22 +568,17 @@ async function loadData() {
     filteredRows = [...allRows];
     renderTable(filteredRows);
     updateStats(allRows);
-    if (isFirstLoad) {
-      document.getElementById('loadingOverlay').style.display = 'none';
-      isFirstLoad = false;
-    }
+    
     const pill = document.getElementById('statusPill');
     pill.textContent = `${allRows.length} films · updated ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
     pill.className = 'status-pill loaded';
+    
+    if (isFirstLoad) finalizeLoad();
   } catch (e) {
-    if (isFirstLoad) {
-      document.getElementById('loadingText').textContent = 'Failed to parse data.';
-      setTimeout(() => { document.getElementById('loadingOverlay').style.display = 'none'; isFirstLoad = false; }, 2000);
-    }
+    console.error(e);
+    if (isFirstLoad) finalizeLoad();
   }
 }
-
-setInterval(loadData, 2 * 60 * 1000);
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
@@ -598,7 +603,7 @@ function cleanRows(rows) {
   return rows.map(r => {
     const rawYear = r['Year'] ? r['Year'].replace(/^"|"$/g, '').trim() : '';
     const movie = r['Movie'] ? r['Movie'].replace(/^"|"$/g, '').trim() : '';
-    if (rawYear.toLowerCase().includes('total') || movie.match(/^\d+$/) || (!rawYear && !movie)) return null;
+    if (rawYear.toLowerCase().includes('total') || movie.match(/^\d+$/) || (!rawYear && !movie) || movie.toLowerCase().includes("no movies logged yet")) return null;
     const yearNum = parseInt(rawYear);
     if (!isNaN(yearNum)) lastYear = yearNum;
     else if (rawYear === '' && lastYear !== '') r['Year'] = lastYear;
@@ -650,12 +655,17 @@ function buildDataSummary() {
   ).join('\n');
 }
 
-// ── MESSAGING LOGIC ──
+// ── ATTACH TO WINDOW FOR HTML ACCESS ──
 
 window.sendMessage = async function(overrideText) {
   const input = document.getElementById('chatInput');
   const question = overrideText || input.value.trim();
   if (!question || allRows.length === 0) return;
+
+  if (!geminiModel) {
+    addMessage('ai', "Error: Gemini API Key is missing. Please enter your key in the script.");
+    return;
+  }
 
   input.value = '';
   document.getElementById('sendBtn').disabled = true;
@@ -679,10 +689,12 @@ window.sendMessage = async function(overrideText) {
   } catch (e) {
     console.error(e);
     removeTyping();
-    addMessage('ai', "Encountered an error. Ensure your API key is valid and you're not over the free tier limit.");
+    addMessage('ai', "Encountered an error. Ensure your API key is valid.");
   }
   document.getElementById('sendBtn').disabled = false;
 };
+
+window.askSuggestion = (btn) => window.sendMessage(btn.textContent);
 
 function addMessage(role, text) {
   const empty = document.getElementById('emptyState');
@@ -716,13 +728,14 @@ function removeTyping() {
   if (t) t.remove();
 }
 
-window.askSuggestion = (btn) => window.sendMessage(btn.textContent);
-
 document.getElementById('chatInput').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
 });
 
+// Start initial load
 loadData();
+// Auto-refresh every 2 minutes
+setInterval(loadData, 2 * 60 * 1000);
 </script>
 </body>
 </html>
