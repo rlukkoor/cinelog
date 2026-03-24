@@ -34,6 +34,9 @@
   .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; }
   .clear-btn { background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
   .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
+  
+  .back-btn { background: var(--surface2); border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: none; }
+  .back-btn:hover { background: var(--accent); color: var(--bg); }
 
   /* ── Table Layout ── */
   .table-wrap { flex: 1; overflow: auto; background: var(--bg); }
@@ -133,6 +136,7 @@
           <select class="filter-input" id="graphLimit" onchange="renderAll()" style="flex:1">
             <option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="0">Show All</option>
           </select>
+          <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
         </div>
         <div class="graph-wrap" id="chartContainer"></div>
       </div>
@@ -145,6 +149,7 @@
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
 const PROXIES = [url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, url => `https://corsproxy.io/?${encodeURIComponent(url)}` ];
 let allRows = [];
+let historyStack = [];
 
 async function loadData() {
   const overlay = document.getElementById('loadingOverlay');
@@ -186,7 +191,27 @@ function toggleSortUI() {
   sortUI.style.display = (col === 'year' || col === 'decade') ? 'block' : 'none';
 }
 
+function saveState() {
+  historyStack.push({
+    search: document.getElementById('searchInput').value,
+    decade: document.getElementById('decadeSelect').value,
+    year: document.getElementById('yearSingle').value
+  });
+  document.getElementById('backBtn').style.display = 'block';
+}
+
+function goBack() {
+  if (historyStack.length === 0) return;
+  const lastState = historyStack.pop();
+  document.getElementById('searchInput').value = lastState.search;
+  document.getElementById('decadeSelect').value = lastState.decade;
+  document.getElementById('yearSingle').value = lastState.year;
+  if (historyStack.length === 0) document.getElementById('backBtn').style.display = 'none';
+  renderAll(true); // Don't save history on a back-action
+}
+
 function applyFilter(label) {
+  saveState();
   const col = document.getElementById('graphColumn').value;
   if (col === 'year') {
     document.getElementById('yearSingle').value = label;
@@ -197,15 +222,14 @@ function applyFilter(label) {
     document.getElementById('yearSingle').value = '';
     document.getElementById('searchInput').value = '';
   } else {
-    // For Directors, Countries, Music, etc.
     document.getElementById('searchInput').value = label;
     document.getElementById('decadeSelect').value = '';
     document.getElementById('yearSingle').value = '';
   }
-  renderAll();
+  renderAll(true);
 }
 
-function renderAll() {
+function renderAll(skipHistory = false) {
   const searchStr = document.getElementById('searchInput').value.toLowerCase();
   const decade = document.getElementById('decadeSelect').value;
   const single = document.getElementById('yearSingle').value.trim();
@@ -275,6 +299,8 @@ function generateChart(data) {
 }
 
 function clearFilters() {
+  historyStack = [];
+  document.getElementById('backBtn').style.display = 'none';
   document.getElementById('searchInput').value = '';
   document.getElementById('decadeSelect').value = '';
   document.getElementById('yearSingle').value = '';
@@ -289,7 +315,10 @@ function switchTab(t) {
   if(t === 'graphTab') renderAll();
 }
 
-['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => document.getElementById(id).addEventListener('input', renderAll));
+['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => document.getElementById(id).addEventListener('input', () => {
+    // Note: Manual typing doesn't trigger saveState to avoid flooding stack
+    renderAll();
+}));
 loadData();
 </script>
 </body>
