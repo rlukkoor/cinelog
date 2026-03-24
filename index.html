@@ -57,8 +57,9 @@
 
   .graph-wrap { flex: 1; overflow-y: auto; padding: 20px; }
   .bar-row { margin-bottom: 12px; cursor: pointer; }
-  .bar-row:hover .bar-info { color: var(--accent); }
-  .bar-row:hover .bar-fill:not(.zero) { background: var(--accent); }
+  .bar-row.no-click { cursor: default; pointer-events: none; opacity: 0.3; }
+  .bar-row:not(.no-click):hover .bar-info { color: var(--accent); }
+  .bar-row:not(.no-click):hover .bar-fill:not(.zero) { background: var(--accent); }
   
   .bar-info { display: flex; justify-content: space-between; font-size: 11px; font-family: 'DM Mono', monospace; margin-bottom: 4px; transition: color 0.2s; }
   .bar-bg { height: 6px; background: var(--surface2); border-radius: 3px; }
@@ -207,7 +208,7 @@ function goBack() {
   document.getElementById('decadeSelect').value = lastState.decade;
   document.getElementById('yearSingle').value = lastState.year;
   if (historyStack.length === 0) document.getElementById('backBtn').style.display = 'none';
-  renderAll(true); // Don't save history on a back-action
+  renderAll(true);
 }
 
 function applyFilter(label) {
@@ -291,11 +292,16 @@ function generateChart(data) {
   if (limit > 0) items = items.slice(0, limit);
   const max = Math.max(...items.map(i => i[1]), 1);
 
-  document.getElementById('chartContainer').innerHTML = items.map(([l, c]) => `
-    <div class="bar-row" onclick="applyFilter('${l.replace(/'/g, "\\'")}')">
-      <div class="bar-info" style="${c === 0 ? 'color:var(--muted); opacity:0.3' : ''}"><span>${l}</span><span>${c}</span></div>
-      <div class="bar-bg"><div class="bar-fill ${c === 0 ? 'zero' : ''}" style="width:${(Math.max(c, 0.1)/max)*100}%"></div></div>
-    </div>`).join('');
+  document.getElementById('chartContainer').innerHTML = items.map(([l, c]) => {
+    const isClickable = c > 0;
+    const clickAttr = isClickable ? `onclick="applyFilter('${l.replace(/'/g, "\\'")}')"` : '';
+    const classAttr = isClickable ? 'bar-row' : 'bar-row no-click';
+    return `
+      <div class="${classAttr}" ${clickAttr}>
+        <div class="bar-info"><span>${l}</span><span>${c}</span></div>
+        <div class="bar-bg"><div class="bar-fill ${c === 0 ? 'zero' : ''}" style="width:${(Math.max(c, 0.1)/max)*100}%"></div></div>
+      </div>`;
+  }).join('');
 }
 
 function clearFilters() {
@@ -316,7 +322,6 @@ function switchTab(t) {
 }
 
 ['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => document.getElementById(id).addEventListener('input', () => {
-    // Note: Manual typing doesn't trigger saveState to avoid flooding stack
     renderAll();
 }));
 loadData();
