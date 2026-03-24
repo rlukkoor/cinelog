@@ -95,13 +95,13 @@
   }
   .filter-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 10px 20px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
   .filter-input {
-    flex: 1;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -186,7 +186,7 @@
   .stat-val { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); }
   .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; }
 
-  /* ── Right Panel: Chat & Graphs ── */
+  /* ── Right Panel ── */
   .chat-panel {
     flex: 1;
     display: flex;
@@ -274,17 +274,24 @@
       <span style="font-size:11px;color:var(--muted);font-family:'DM Mono'" id="rowCount">—</span>
     </div>
     <div class="filter-row">
-      <select class="filter-input" id="columnSelect" style="width:140px;flex:none">
-        <option value="all">All columns</option>
-        <option value="movie">Movie</option>
-        <option value="director">Director</option>
-        <option value="screenwriter">Screenwriter</option>
-        <option value="cinematography">Cinematography</option>
-        <option value="music">Music</option>
-        <option value="country">Country</option>
+      <input class="filter-input" id="searchInput" placeholder="Search keywords..." style="flex:2" />
+      <select class="filter-input" id="decadeSelect" style="width:110px;flex:none">
+        <option value="">All Decades</option>
+        <option value="2020">2020s</option>
+        <option value="2010">2010s</option>
+        <option value="2000">2000s</option>
+        <option value="1990">1990s</option>
+        <option value="1980">1980s</option>
+        <option value="1970">1970s</option>
+        <option value="1960">1960s</option>
+        <option value="1950">1950s</option>
+        <option value="1940">1940s</option>
       </select>
-      <input class="filter-input" id="searchInput" placeholder="Search..." />
-      <input class="filter-input" id="yearInput" placeholder="Year..." style="width:80px;flex:none" />
+      <div style="display:flex; gap:4px; align-items:center;">
+        <input class="filter-input" id="yearStart" placeholder="From" style="width:55px;flex:none" />
+        <span style="color:var(--muted); font-size:10px">—</span>
+        <input class="filter-input" id="yearEnd" placeholder="To" style="width:55px;flex:none" />
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -447,7 +454,7 @@ function renderTable(rows) {
       <td>${r.music || '—'}</td>
       <td style="color:var(--muted);font-size:11px">${r.country || ''}</td>
     </tr>`).join('');
-  document.getElementById('rowCount').textContent = `${rows.length} rows`;
+  document.getElementById('rowCount').textContent = `${rows.length} films visible`;
 }
 
 function updateStats(rows) {
@@ -463,22 +470,29 @@ function updateStats(rows) {
 
 function applyFilter() {
   const search = document.getElementById('searchInput').value.toLowerCase();
-  const year = document.getElementById('yearInput').value.trim();
-  const col = document.getElementById('columnSelect').value;
+  const decade = document.getElementById('decadeSelect').value;
+  const start = parseInt(document.getElementById('yearStart').value) || 0;
+  const end = parseInt(document.getElementById('yearEnd').value) || 9999;
   
   const filtered = allRows.filter(r => {
-    const matchSearch = col === 'all' 
-      ? Object.values(r).some(v => String(v).toLowerCase().includes(search))
-      : String(r[col] || '').toLowerCase().includes(search);
-    const matchYear = !year || String(r.year).includes(year);
-    return matchSearch && matchYear;
+    const rowYear = parseInt(r.year);
+    // Search match
+    const matchSearch = Object.values(r).some(v => String(v).toLowerCase().includes(search));
+    // Range match
+    const matchRange = rowYear >= start && rowYear <= end;
+    // Decade match
+    const matchDecade = !decade || (rowYear >= parseInt(decade) && rowYear < parseInt(decade) + 10);
+
+    return matchSearch && matchRange && matchDecade;
   });
   renderTable(filtered);
+  updateStats(filtered); // Update total film counts based on view
 }
 
-document.getElementById('searchInput').addEventListener('input', applyFilter);
-document.getElementById('yearInput').addEventListener('input', applyFilter);
-document.getElementById('columnSelect').addEventListener('change', applyFilter);
+// Attach listeners to all filter inputs
+['searchInput', 'decadeSelect', 'yearStart', 'yearEnd'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilter);
+});
 
 function switchTab(tabId) {
   document.querySelectorAll('.tab-pane, .tab-btn').forEach(el => el.classList.remove('active'));
@@ -493,20 +507,14 @@ function generateChart() {
   
   const counts = {};
   allRows.forEach(r => {
-    // Resolve column name mismatch (r.year vs r['year'])
     let val = r[column] || r[column.toLowerCase()] || '';
     if (!val || val === '—') return;
-
-    // Split multi-value cells (e.g., "Joel Coen, Ethan Coen")
     const parts = String(val).split(',').map(p => p.trim()).filter(p => p && p !== '—');
     parts.forEach(p => { counts[p] = (counts[p] || 0) + 1; });
   });
 
   let items = Object.entries(counts).sort((a, b) => {
-    // 1. Sort by Count (Descending)
     if (b[1] !== a[1]) return b[1] - a[1];
-
-    // 2. Sort by Last Name (Alphabetical) if counts are equal
     const getLastName = (name) => {
       const parts = name.split(' ');
       return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : name.toLowerCase();
@@ -533,7 +541,6 @@ async function sendMessage(overrideText) {
   const msgs = document.getElementById('messages');
   msgs.innerHTML += `<div class="msg"><div class="msg-label">You</div><div class="msg-bubble user">${question}</div></div>`;
   msgs.scrollTop = msgs.scrollHeight;
-  // Mock AI response for structural demonstration
   setTimeout(() => {
     msgs.innerHTML += `<div class="msg"><div class="msg-label ai">Assistant</div><div class="msg-bubble ai">I've analyzed your <strong>${allRows.length}</strong> entries. Use the Visual Insights tab for a deep dive!</div></div>`;
     msgs.scrollTop = msgs.scrollHeight;
