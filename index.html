@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cinelog</title>
+<title>Cinelog | Film Archive</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,8 +16,6 @@
     --muted: #888;
     --accent: #e8c97a;
     --accent2: #c9a84c;
-    --danger: #e87a7a;
-    --success: #7ae8b0;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,14 +24,14 @@
     background: var(--bg);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  /* ── Top bar ── */
+  /* ── Header ── */
   .topbar {
     display: flex;
     align-items: center;
@@ -44,225 +42,123 @@
     background: var(--surface);
     flex-shrink: 0;
   }
-  .logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    color: var(--accent);
-    letter-spacing: 0.02em;
-  }
-  .logo span { font-style: italic; color: var(--muted); font-size: 13px; margin-left: 8px; font-family: 'DM Sans', sans-serif; }
-  .status-pill {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    padding: 4px 10px;
-    border-radius: 99px;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-  }
-  .status-pill.loaded { border-color: var(--success); color: var(--success); }
+  .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 0.02em; }
+  
+  .layout { display: flex; flex: 1; overflow: hidden; }
 
-  /* ── Layout ── */
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
-
+  /* ── Data Panel (Left) ── */
   .data-panel {
-    width: 52%;
+    width: 62%; 
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border);
     overflow: hidden;
   }
 
-  .panel-header {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .panel-title {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
   .filter-row {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
-    padding: 10px 20px;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+    background: var(--bg);
   }
   .filter-input {
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 6px 10px;
     color: var(--text);
     font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
     outline: none;
   }
-  .filter-input:focus { border-color: var(--accent2); }
-  select.filter-input {
-    appearance: none;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-color: var(--surface2);
-    padding-right: 28px;
-  }
 
+  /* ── Table: Fixed Layout to prevent "Blocking" ── */
   .table-wrap {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: auto;
+    overflow: auto;
     background: var(--bg);
   }
-  .table-wrap::-webkit-scrollbar { width: 4px; }
-  .table-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
   table {
     width: 100%;
-    min-width: 900px;
     border-collapse: collapse;
-    font-size: 12px;
-    table-layout: fixed;
+    table-layout: fixed; 
   }
-  thead { position: sticky; top: 0; background: var(--surface); z-index: 2; }
+  thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
   th {
     text-align: left;
-    padding: 10px 20px;
+    padding: 12px 15px;
     font-size: 10px;
     font-family: 'DM Mono', monospace;
     color: var(--muted);
     text-transform: uppercase;
     border-bottom: 1px solid var(--border);
-    font-weight: 400;
   }
   td {
-    padding: 9px 20px;
+    padding: 10px 15px;
     border-bottom: 1px solid var(--border);
-    color: var(--text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  
-  .col-year { width: 60px; }
-  .col-movie { width: 220px; }
+
+  /* Column Width Logic */
+  .col-year { width: 65px; }
+  .col-movie { width: 200px; }
+  .col-dir { width: 140px; }
+  .col-writer { width: 140px; }
+  .col-cin { width: 140px; }
+  .col-music { width: 140px; }
+  .col-country { width: 110px; }
+
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
-  .stats-row {
-    display: flex;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .stat {
-    flex: 1;
-    padding: 10px 20px;
-    border-right: 1px solid var(--border);
-  }
-  .stat:last-child { border-right: none; }
-  .stat-val { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); }
-  .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; }
+  /* ── Insights & Charts (Right) ── */
+  .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab-btn { flex: 1; padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--muted); background: transparent; border: none; cursor: pointer; }
+  .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
-  /* ── Right Panel ── */
-  .chat-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  .graph-wrap { flex: 1; overflow-y: auto; padding: 20px; }
+  .bar-row { margin-bottom: 12px; }
+  .bar-info { display: flex; justify-content: space-between; font-size: 11px; font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+  .bar-bg { height: 6px; background: var(--surface2); border-radius: 3px; }
+  .bar-fill { height: 100%; background: var(--accent2); border-radius: 3px; transition: width 0.8s ease-out; }
 
-  .panel-tabs {
-    display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-  .tab-btn {
-    flex: 1;
-    padding: 12px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    text-transform: uppercase;
-    color: var(--muted);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-  }
-  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  /* ── Stats Bar ── */
+  .stats-row { display: flex; border-top: 1px solid var(--border); background: var(--surface); }
+  .stat { flex: 1; padding: 15px 20px; border-right: 1px solid var(--border); }
+  .stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
 
-  .panel-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .tab-pane { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-  .tab-pane.active { display: flex; }
-
-  /* ── Insights/Graphs ── */
-  .graph-controls { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; background: #0d0d0d; }
-  .graph-wrap { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-
-  .bar-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-  .bar-info { display: flex; justify-content: space-between; font-size: 12px; font-family: 'DM Mono', monospace; }
-  .bar-label { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
-  .bar-count { color: var(--accent); }
-  .bar-bg { height: 8px; background: var(--surface2); border-radius: 4px; width: 100%; overflow: hidden; }
-  .bar-fill { height: 100%; background: var(--accent2); border-radius: 4px; transition: width 0.8s ease-out; }
-
-  /* ── Messages ── */
-  .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-  .msg-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; }
-  .msg-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.65; }
-
-  .input-row { display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
-  .chat-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; outline: none; }
-  .send-btn { background: var(--accent); color: #0d0d0d; border: none; border-radius: 8px; padding: 0 16px; font-weight: 500; cursor: pointer; }
-
-  .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+  .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingOverlay">
-  <div style="font-family:'DM Serif Display';font-size:36px;color:var(--accent)">Cinelog</div>
-  <div id="loadingText" style="font-size:12px;font-family:'DM Mono';color:var(--muted);margin-top:20px">Loading archive...</div>
+  <div style="font-family:'DM Serif Display'; font-size:32px; color:var(--accent)">Syncing Film Log...</div>
 </div>
 
 <div class="topbar">
-  <div class="logo">Cinelog <span>film log analyst</span></div>
-  <div class="status-pill" id="statusPill">synced</div>
+  <div class="logo">Cinelog <span>Archive</span></div>
+  <div id="rowCount" style="font-family:'DM Mono'; font-size:11px; color:var(--muted)">0 films logged</div>
 </div>
 
 <div class="layout">
   <div class="data-panel">
-    <div class="panel-header">
-      <span class="panel-title">Film log</span>
-      <span style="font-size:11px;color:var(--muted);font-family:'DM Mono'" id="rowCount">—</span>
-    </div>
     <div class="filter-row">
-      <input class="filter-input" id="searchInput" placeholder="Search keywords..." style="flex:2" />
-      <select class="filter-input" id="decadeSelect" style="width:110px;flex:none">
+      <input class="filter-input" id="searchInput" placeholder="Search keywords..." style="flex:1">
+      <select class="filter-input" id="decadeSelect">
         <option value="">All Decades</option>
-        <option value="2020">2020s</option><option value="2010">2010s</option><option value="2000">2000s</option>
-        <option value="1990">1990s</option><option value="1980">1980s</option><option value="1970">1970s</option>
-        <option value="1960">1960s</option><option value="1950">1950s</option><option value="1940">1940s</option>
-        <option value="1930">1930s</option><option value="1920">1920s</option>
+        <script>
+          for(let y=2020; y>=1920; y-=10) document.write(`<option value="${y}">${y}s</option>`);
+        </script>
       </select>
-      <div style="display:flex; gap:4px; align-items:center;">
-        <input class="filter-input" id="yearSingle" placeholder="Year" title="Type a year to see only that year" style="width:55px;flex:none" />
-        <span style="color:var(--muted); font-size:10px">or</span>
-        <input class="filter-input" id="yearStart" placeholder="From" style="width:55px;flex:none" />
-        <input class="filter-input" id="yearEnd" placeholder="To" style="width:55px;flex:none" />
-      </div>
+      <input class="filter-input" id="yearSingle" placeholder="Year" style="width:65px">
     </div>
+    
     <div class="table-wrap">
       <table>
         <thead>
@@ -271,7 +167,7 @@
             <th class="col-movie">Movie</th>
             <th class="col-dir">Director</th>
             <th class="col-writer">Screenwriter</th>
-            <th class="col-camera">Cinematography</th>
+            <th class="col-cin">Cinematography</th>
             <th class="col-music">Music</th>
             <th class="col-country">Country</th>
           </tr>
@@ -279,46 +175,37 @@
         <tbody id="tableBody"></tbody>
       </table>
     </div>
+
     <div class="stats-row">
-      <div class="stat"><div class="stat-val" id="statMovies">—</div><div class="stat-label">Movies</div></div>
-      <div class="stat"><div class="stat-val" id="statYears">—</div><div class="stat-label">Years</div></div>
-      <div class="stat"><div class="stat-val" id="statCountries">—</div><div class="stat-label">Countries</div></div>
-      <div class="stat"><div class="stat-val" id="statDirectors">—</div><div class="stat-label">Directors</div></div>
+      <div class="stat"><div class="stat-val" id="statMovies">0</div><div class="stat-label">Movies</div></div>
+      <div class="stat"><div class="stat-val" id="statYears">0</div><div class="stat-label">Years</div></div>
+      <div class="stat"><div class="stat-val" id="statCountries">0</div><div class="stat-label">Countries</div></div>
+      <div class="stat"><div class="stat-val" id="statDirectors">0</div><div class="stat-label">Directors</div></div>
     </div>
   </div>
 
   <div class="chat-panel">
     <div class="panel-tabs">
-      <button class="tab-btn active" onclick="switchTab('chatTab')">Assistant</button>
-      <button class="tab-btn" onclick="switchTab('graphTab')">Visual Insights</button>
+      <button class="tab-btn" onclick="switchTab('chatTab')">Chat</button>
+      <button class="tab-btn active" onclick="switchTab('graphTab')">Visual Insights</button>
     </div>
 
-    <div class="panel-content">
-      <div id="chatTab" class="tab-pane active">
-        <div class="messages" id="messages"></div>
-        <div class="input-row">
-          <input class="chat-input" id="chatInput" placeholder="Ask about your log..." />
-          <button class="send-btn" onclick="sendMessage()">Ask</button>
-        </div>
-      </div>
-
-      <div id="graphTab" class="tab-pane">
-        <div class="graph-controls">
-          <select class="filter-input" id="graphColumn" onchange="generateChart()">
+    <div class="panel-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+      <div id="graphTab" class="tab-pane active" style="display:flex; flex-direction:column; height:100%;">
+        <div class="filter-row" style="background:var(--surface)">
+          <select class="filter-input" id="graphColumn" onchange="generateChart()" style="flex:1">
             <option value="director">Top Directors</option>
             <option value="screenwriter">Top Screenwriters</option>
+            <option value="cinematography">Top Cinematographers</option>
+            <option value="music">Top Composers</option>
             <option value="country">Top Countries</option>
-            <option value="decade_summary">Decade Summary</option>
-            <option value="year">Yearly Distribution</option>
+            <option value="decade">Films by Decade</option>
           </select>
-          <select class="filter-input" id="graphLimit" onchange="generateChart()">
-            <option value="10">Top 10</option><option value="25">Top 25</option><option value="0">All</option>
-          </select>
-          <label style="font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px">
-            <input type="checkbox" id="syncGraph" onchange="generateChart()" checked> Apply filters to graph
-          </label>
         </div>
         <div class="graph-wrap" id="chartContainer"></div>
+      </div>
+      <div id="chatTab" class="tab-pane" style="display:none; padding:20px; color:var(--muted); font-family:'DM Mono'">
+        AI Analysis Module Active.
       </div>
     </div>
   </div>
@@ -327,16 +214,15 @@
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
 let allRows = [];
-let filteredRows = [];
 
 async function loadData() {
   try {
     const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`);
     const text = await res.text();
     allRows = cleanRows(parseCSV(text));
-    applyFilter();
+    renderAll();
     document.getElementById('loadingOverlay').style.display = 'none';
-  } catch (e) { document.getElementById('loadingText').textContent = "Error syncing data."; }
+  } catch (e) { console.error("Sync error", e); }
 }
 
 function parseCSV(text) {
@@ -359,108 +245,103 @@ function parseCSV(text) {
 function cleanRows(rows) {
   let lastYear = '';
   return rows.map(r => {
-    const rawYear = r['Year']?.replace(/^"|"$/g, '').trim();
     const movie = r['Movie']?.replace(/^"|"$/g, '').trim();
     if (!movie || movie.match(/^\d+$/)) return null;
+    const rawYear = r['Year']?.trim();
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
     return {
       year: lastYear,
       movie: movie,
-      director: r['Director'] || '',
-      screenwriter: r['Screenwriter'] || '',
-      cinematography: r['Cinematography'] || '',
-      music: r['Music'] || '',
-      country: r['Country'] || '',
+      director: r['Director'] || '—',
+      screenwriter: r['Screenwriter'] || '—',
+      cinematography: r['Cinematography'] || '—',
+      music: r['Music'] || '—',
+      country: r['Country'] || '—',
       decade: Math.floor(lastYear / 10) * 10
     };
   }).filter(Boolean);
 }
 
-function applyFilter() {
+function renderAll() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const decade = document.getElementById('decadeSelect').value;
   const single = document.getElementById('yearSingle').value.trim();
-  const start = document.getElementById('yearStart').value.trim();
-  const end = document.getElementById('yearEnd').value.trim();
 
-  filteredRows = allRows.filter(r => {
-    const y = r.year;
+  const filtered = allRows.filter(r => {
     const matchSearch = Object.values(r).some(v => String(v).toLowerCase().includes(search));
-    const matchDecade = !decade || y >= parseInt(decade) && y < parseInt(decade) + 10;
-    
-    let matchYear = true;
-    if (single) matchYear = y == parseInt(single);
-    else if (start || end) {
-      const s = parseInt(start) || 0;
-      const e = parseInt(end) || 9999;
-      matchYear = y >= s && y <= e;
-    }
-
+    const matchDecade = !decade || r.decade == decade;
+    const matchYear = !single || r.year == single;
     return matchSearch && matchDecade && matchYear;
   });
 
-  renderTable(filteredRows);
-  updateStats(filteredRows);
-  generateChart();
-}
+  document.getElementById('tableBody').innerHTML = filtered.map(r => `
+    <tr>
+      <td class="year-col">${r.year}</td>
+      <td style="font-weight:500; color:var(--accent)">${r.movie}</td>
+      <td>${r.director}</td>
+      <td>${r.screenwriter}</td>
+      <td>${r.cinematography}</td>
+      <td>${r.music}</td>
+      <td style="color:var(--muted); font-size:11px">${r.country}</td>
+    </tr>`).join('');
 
-function renderTable(rows) {
-  document.getElementById('tableBody').innerHTML = rows.map(r => `
-    <tr><td class="year-col">${r.year}</td><td><strong>${r.movie}</strong></td>
-    <td>${r.director}</td><td>${r.screenwriter}</td><td>${r.cinematography}</td>
-    <td>${r.music}</td><td style="color:var(--muted)">${r.country}</td></tr>`).join('');
-  document.getElementById('rowCount').textContent = `${rows.length} films`;
-}
+  // Update Stats with correct counting logic
+  const countrySet = new Set();
+  const directorSet = new Set();
+  const yearSet = new Set();
 
-function updateStats(rows) {
-  const years = new Set(rows.map(r => r.year)).size;
-  const directors = new Set(rows.map(r => r.director).filter(Boolean)).size;
-  document.getElementById('statMovies').textContent = rows.length;
-  document.getElementById('statYears').textContent = years;
-  document.getElementById('statDirectors').textContent = directors;
-}
+  filtered.forEach(r => {
+    if (r.country && r.country !== '—') r.country.split(',').forEach(c => countrySet.add(c.trim()));
+    if (r.director && r.director !== '—') r.director.split(',').forEach(d => directorSet.add(d.trim()));
+    if (r.year) yearSet.add(r.year);
+  });
 
-function generateChart() {
-  const column = document.getElementById('graphColumn').value;
-  const limit = parseInt(document.getElementById('graphLimit').value);
-  const sync = document.getElementById('syncGraph').checked;
-  const data = sync ? filteredRows : allRows;
+  document.getElementById('rowCount').textContent = `${filtered.length} films`;
+  document.getElementById('statMovies').textContent = filtered.length;
+  document.getElementById('statYears').textContent = yearSet.size;
+  document.getElementById('statCountries').textContent = countrySet.size;
+  document.getElementById('statDirectors').textContent = directorSet.size;
   
+  generateChart(filtered);
+}
+
+function generateChart(data) {
+  const column = document.getElementById('graphColumn').value;
   const counts = {};
+  
   data.forEach(r => {
-    let key = column === 'decade_summary' ? `${r.decade}s` : (r[column] || '');
-    if (!key || key === '—') return;
-    String(key).split(',').forEach(p => {
-      const val = p.trim();
-      counts[val] = (counts[val] || 0) + 1;
+    let val = column === 'decade' ? `${r.decade}s` : r[column];
+    if (!val || val === '—') return;
+    val.split(',').forEach(p => {
+      const name = p.trim();
+      counts[name] = (counts[name] || 0) + 1;
     });
   });
 
-  let items = Object.entries(counts).sort((a, b) => {
-    if (column === 'decade_summary' || column === 'year') return parseInt(a[0]) - parseInt(b[0]);
+  const items = Object.entries(counts).sort((a,b) => {
     if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].split(' ').pop().localeCompare(b[0].split(' ').pop());
-  });
+    return a[0].split(' ').pop().localeCompare(b[0].split(' ').pop()); // Alphabetical by last name tie-breaker
+  }).slice(0, 25);
 
-  if (limit > 0 && column !== 'decade_summary' && column !== 'year') items = items.slice(0, limit);
   const max = Math.max(...items.map(i => i[1]), 1);
 
   document.getElementById('chartContainer').innerHTML = items.map(([label, count]) => `
     <div class="bar-row">
-      <div class="bar-info"><span>${label}</span><span class="bar-count">${count}</span></div>
+      <div class="bar-info"><span>${label}</span><span>${count}</span></div>
       <div class="bar-bg"><div class="bar-fill" style="width:${(count/max)*100}%"></div></div>
     </div>`).join('');
 }
 
-['searchInput', 'decadeSelect', 'yearSingle', 'yearStart', 'yearEnd'].forEach(id => {
-  document.getElementById(id).addEventListener('input', applyFilter);
-});
-
-function switchTab(id) {
-  document.querySelectorAll('.tab-pane, .tab-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-pane').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).style.display = 'block';
   event.currentTarget.classList.add('active');
 }
+
+['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderAll);
+});
 
 loadData();
 </script>
