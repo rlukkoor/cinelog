@@ -20,95 +20,28 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
   /* ── Header ── */
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    height: 52px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
-  }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
   .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 0.02em; }
-  
   .layout { display: flex; flex: 1; overflow: hidden; }
 
   /* ── Data Panel (Left) ── */
-  .data-panel {
-    width: 62%; 
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  .filter-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-  }
-  .filter-input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 6px 10px;
-    color: var(--text);
-    font-size: 12px;
-    outline: none;
-  }
-  .clear-btn {
-    background: transparent;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    text-transform: uppercase;
-  }
+  .data-panel { width: 62%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+  .filter-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; }
+  .clear-btn { background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
   .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
 
   /* ── Table Layout ── */
   .table-wrap { flex: 1; overflow: auto; background: var(--bg); }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
-  th {
-    text-align: left;
-    padding: 12px 15px;
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    color: var(--muted);
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
+  th { text-align: left; padding: 12px 15px; font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
   td { padding: 10px 15px; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .col-year { width: 65px; }
-  .col-movie { width: 200px; }
-  .col-dir { width: 140px; }
-  .col-writer { width: 140px; }
-  .col-cin { width: 140px; }
-  .col-music { width: 140px; }
-  .col-country { width: 110px; }
-
+  .col-year { width: 65px; } .col-movie { width: 200px; } .col-dir { width: 140px; } .col-writer { width: 140px; } .col-cin { width: 140px; } .col-music { width: 140px; } .col-country { width: 110px; }
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
@@ -131,14 +64,12 @@
   .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; }
 
   .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 10px; }
-  .loader-subtext { color: var(--muted); font-family: 'DM Mono'; font-size: 10px; letter-spacing: 1px; }
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingOverlay">
   <div style="font-family:'DM Serif Display'; font-size:32px; color:var(--accent)">Syncing Archive...</div>
-  <div class="loader-subtext">FETCHING DATA FROM GOOGLE SHEETS</div>
 </div>
 
 <div class="topbar">
@@ -180,15 +111,19 @@
     </div>
     <div class="panel-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
       <div id="graphTab" class="tab-pane active" style="display:flex; flex-direction:column; height:100%;">
-        <div class="filter-row" style="background:var(--surface)">
-          <select class="filter-input" id="graphColumn" onchange="renderAll()" style="flex:2">
+        <div class="filter-row" style="background:var(--surface); flex-wrap: wrap;">
+          <select class="filter-input" id="graphColumn" onchange="toggleSortUI(); renderAll()" style="flex:2">
             <option value="director">Top Directors</option>
             <option value="screenwriter">Top Screenwriters</option>
             <option value="cinematography">Top Cinematographers</option>
             <option value="music">Top Composers</option>
             <option value="country">Top Countries</option>
-            <option value="decade">Films by Decade</option>
-            <option value="year">Films by Individual Year</option>
+            <option value="decade">By Decade</option>
+            <option value="year">By Individual Year</option>
+          </select>
+          <select class="filter-input" id="graphSort" onchange="renderAll()" style="flex:1; display:none;">
+            <option value="chron">Timeline</option>
+            <option value="vol" selected>By Volume</option>
           </select>
           <select class="filter-input" id="graphLimit" onchange="renderAll()" style="flex:1">
             <option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="0">Show All</option>
@@ -202,47 +137,24 @@
 </div>
 
 <script>
-// Your published Google Sheets URL
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
-
-// Multiple proxies to bypass CORS issues
-const PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`
-];
-
+const PROXIES = [url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, url => `https://corsproxy.io/?${encodeURIComponent(url)}` ];
 let allRows = [];
 
 async function loadData() {
   const overlay = document.getElementById('loadingOverlay');
-  
   for (let proxyFn of PROXIES) {
     try {
-      console.log("Attempting fetch...");
       const res = await fetch(proxyFn(SHEET_URL), { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) throw new Error();
-      
       const text = await res.text();
       allRows = cleanRows(parseCSV(text));
-      
-      if (allRows.length > 0) {
-        renderAll();
-        overlay.style.display = 'none';
-        return; // Success!
-      }
-    } catch (e) {
-      console.warn("Proxy failed, trying next...");
-    }
+      if (allRows.length > 0) { renderAll(); overlay.style.display = 'none'; return; }
+    } catch (e) { console.warn("Trying next proxy..."); }
   }
-  
-  // If we get here, both proxies failed
-  overlay.innerHTML = `<div style="color:var(--danger); font-family:'DM Serif Display'; font-size:24px">Sync Failed</div>
-                       <div class="loader-subtext">COULD NOT CONNECT TO SHEET. REFRESH TO TRY AGAIN.</div>`;
 }
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
     const vals = []; let cur = '', inQ = false;
@@ -259,17 +171,14 @@ function cleanRows(rows) {
     if (!movie || movie.match(/^\d+$/)) return null;
     const rawYear = r['Year']?.trim();
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
-    return { 
-      year: lastYear, 
-      movie: movie, 
-      director: r['Director'] || '—', 
-      screenwriter: r['Screenwriter'] || '—', 
-      cinematography: r['Cinematography'] || '—', 
-      music: r['Music'] || '—', 
-      country: r['Country'] || '—', 
-      decade: Math.floor(lastYear / 10) * 10 
-    };
+    return { year: lastYear, movie: movie, director: r['Director'] || '—', screenwriter: r['Screenwriter'] || '—', cinematography: r['Cinematography'] || '—', music: r['Music'] || '—', country: r['Country'] || '—', decade: Math.floor(lastYear / 10) * 10 };
   }).filter(Boolean);
+}
+
+function toggleSortUI() {
+  const col = document.getElementById('graphColumn').value;
+  const sortUI = document.getElementById('graphSort');
+  sortUI.style.display = (col === 'year' || col === 'decade') ? 'block' : 'none';
 }
 
 function renderAll() {
@@ -278,13 +187,8 @@ function renderAll() {
   const single = document.getElementById('yearSingle').value.trim();
 
   const filtered = allRows.filter(r => {
-    const matchSearch = Object.keys(r).some(key => {
-      if (key === 'year' || key === 'decade') return false; 
-      return String(r[key]).toLowerCase().includes(searchStr);
-    });
-    const matchDecade = !decade || r.decade == decade;
-    const matchYear = !single || r.year == single;
-    return matchSearch && matchDecade && matchYear;
+    const matchSearch = Object.keys(r).some(k => (k !== 'year' && k !== 'decade') && String(r[k]).toLowerCase().includes(searchStr));
+    return matchSearch && (!decade || r.decade == decade) && (!single || r.year == single);
   });
 
   document.getElementById('tableBody').innerHTML = filtered.map(r => `<tr><td class="year-col">${r.year}</td><td style="font-weight:500; color:var(--accent)">${r.movie}</td><td>${r.director}</td><td>${r.screenwriter}</td><td>${r.cinematography}</td><td>${r.music}</td><td style="color:var(--muted); font-size:11px">${r.country}</td></tr>`).join('');
@@ -296,16 +200,17 @@ function renderAll() {
     if (r.year) sets.years.add(r.year);
   });
 
-  document.getElementById('rowCount').textContent = `${filtered.length} films`;
   document.getElementById('statMovies').textContent = filtered.length;
   document.getElementById('statYears').textContent = sets.years.size;
   document.getElementById('statCountries').textContent = sets.countries.size;
   document.getElementById('statDirectors').textContent = sets.directors.size;
+  document.getElementById('rowCount').textContent = `${filtered.length} films`;
   generateChart(filtered);
 }
 
 function generateChart(data) {
   const col = document.getElementById('graphColumn').value;
+  const sortType = document.getElementById('graphSort').value;
   const limit = parseInt(document.getElementById('graphLimit').value);
   const counts = {};
   
@@ -316,7 +221,7 @@ function generateChart(data) {
   });
 
   let items = Object.entries(counts).sort((a,b) => {
-    if (limit === 0 && (col === 'decade' || col === 'year')) return parseInt(a[0]) - parseInt(b[0]);
+    if ((col === 'year' || col === 'decade') && sortType === 'chron') return parseInt(a[0]) - parseInt(b[0]);
     if (b[1] !== a[1]) return b[1] - a[1];
     return a[0].split(' ').pop().localeCompare(b[0].split(' ').pop());
   });
