@@ -16,6 +16,7 @@
     --muted: #888;
     --accent: #e8c97a;
     --accent2: #c9a84c;
+    --danger: #ff4d4d;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,18 +73,22 @@
     font-size: 12px;
     outline: none;
   }
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
 
   /* ── Table Layout ── */
-  .table-wrap {
-    flex: 1;
-    overflow: auto;
-    background: var(--bg);
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed; 
-  }
+  .table-wrap { flex: 1; overflow: auto; background: var(--bg); }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
   th {
     text-align: left;
@@ -94,15 +99,8 @@
     text-transform: uppercase;
     border-bottom: 1px solid var(--border);
   }
-  td {
-    padding: 10px 15px;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  td { padding: 10px 15px; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Column Widths */
   .col-year { width: 65px; }
   .col-movie { width: 200px; }
   .col-dir { width: 140px; }
@@ -114,7 +112,7 @@
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
-  /* ── Insights & Charts (Right) ── */
+  /* ── Insights & Charts ── */
   .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab-btn { flex: 1; padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--muted); background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
@@ -137,9 +135,7 @@
 </head>
 <body>
 
-<div class="loading-overlay" id="loadingOverlay">
-  <div style="font-family:'DM Serif Display'; font-size:32px; color:var(--accent)">Syncing Film Log...</div>
-</div>
+<div class="loading-overlay" id="loadingOverlay"><div style="font-family:'DM Serif Display'; font-size:32px; color:var(--accent)">Syncing Archive...</div></div>
 
 <div class="topbar">
   <div class="logo">Cinelog <span>Archive</span></div>
@@ -149,29 +145,18 @@
 <div class="layout">
   <div class="data-panel">
     <div class="filter-row">
-      <input class="filter-input" id="searchInput" placeholder="Search keywords..." style="flex:1">
+      <input class="filter-input" id="searchInput" placeholder="Search movies, directors..." style="flex:1">
       <select class="filter-input" id="decadeSelect">
         <option value="">All Decades</option>
-        <script>
-          for(let y=2020; y>=1920; y-=10) document.write(`<option value="${y}">${y}s</option>`);
-        </script>
+        <script>for(let y=2020; y>=1920; y-=10) document.write(`<option value="${y}">${y}s</option>`);</script>
       </select>
       <input class="filter-input" id="yearSingle" placeholder="Year" style="width:65px">
+      <button class="clear-btn" onclick="clearFilters()">Clear All</button>
     </div>
     
     <div class="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th class="col-year">Year</th>
-            <th class="col-movie">Movie</th>
-            <th class="col-dir">Director</th>
-            <th class="col-writer">Screenwriter</th>
-            <th class="col-cin">Cinematography</th>
-            <th class="col-music">Music</th>
-            <th class="col-country">Country</th>
-          </tr>
-        </thead>
+        <thead><tr><th class="col-year">Year</th><th class="col-movie">Movie</th><th class="col-dir">Director</th><th class="col-writer">Writer</th><th class="col-cin">Cinematography</th><th class="col-music">Music</th><th class="col-country">Country</th></tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
@@ -189,7 +174,6 @@
       <button class="tab-btn" onclick="switchTab('chatTab')">Chat</button>
       <button class="tab-btn active" onclick="switchTab('graphTab')">Visual Insights</button>
     </div>
-
     <div class="panel-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
       <div id="graphTab" class="tab-pane active" style="display:flex; flex-direction:column; height:100%;">
         <div class="filter-row" style="background:var(--surface)">
@@ -200,19 +184,15 @@
             <option value="music">Top Composers</option>
             <option value="country">Top Countries</option>
             <option value="decade">Films by Decade</option>
+            <option value="year">Films by Individual Year</option>
           </select>
           <select class="filter-input" id="graphLimit" onchange="renderAll()" style="flex:1">
-            <option value="10">Top 10</option>
-            <option value="25" selected>Top 25</option>
-            <option value="50">Top 50</option>
-            <option value="0">Show All</option>
+            <option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="0">Show All</option>
           </select>
         </div>
         <div class="graph-wrap" id="chartContainer"></div>
       </div>
-      <div id="chatTab" class="tab-pane" style="display:none; padding:20px; color:var(--muted); font-family:'DM Mono'">
-        Analysis Module Ready.
-      </div>
+      <div id="chatTab" class="tab-pane" style="display:none; padding:20px; color:var(--muted); font-family:'DM Mono'">Standby...</div>
     </div>
   </div>
 </div>
@@ -236,15 +216,9 @@ function parseCSV(text) {
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
     const vals = []; let cur = '', inQ = false;
-    for (let c of line) {
-      if (c === '"') inQ = !inQ;
-      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
-      else cur += c;
-    }
+    for (let c of line) { if (c === '"') inQ = !inQ; else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else cur += c; }
     vals.push(cur.trim());
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = vals[i] || '');
-    return obj;
+    const obj = {}; headers.forEach((h, i) => obj[h] = vals[i] || ''); return obj;
   });
 }
 
@@ -255,111 +229,86 @@ function cleanRows(rows) {
     if (!movie || movie.match(/^\d+$/)) return null;
     const rawYear = r['Year']?.trim();
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
-    return {
-      year: lastYear,
-      movie: movie,
-      director: r['Director'] || '—',
-      screenwriter: r['Screenwriter'] || '—',
-      cinematography: r['Cinematography'] || '—',
-      music: r['Music'] || '—',
-      country: r['Country'] || '—',
-      decade: Math.floor(lastYear / 10) * 10
-    };
+    return { year: lastYear, movie: movie, director: r['Director'] || '—', screenwriter: r['Screenwriter'] || '—', cinematography: r['Cinematography'] || '—', music: r['Music'] || '—', country: r['Country'] || '—', decade: Math.floor(lastYear / 10) * 10 };
   }).filter(Boolean);
 }
 
 function renderAll() {
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const searchStr = document.getElementById('searchInput').value.toLowerCase();
   const decade = document.getElementById('decadeSelect').value;
   const single = document.getElementById('yearSingle').value.trim();
 
   const filtered = allRows.filter(r => {
-    const matchSearch = Object.values(r).some(v => String(v).toLowerCase().includes(search));
+    // Logic: If search string is just a year (e.g. 1994), it must match the MOVIE TITLE, not the release year metadata.
+    const matchSearch = Object.keys(r).some(key => {
+      if (key === 'year' || key === 'decade') return false; // Prevent year searching in main bar
+      return String(r[key]).toLowerCase().includes(searchStr);
+    });
     const matchDecade = !decade || r.decade == decade;
     const matchYear = !single || r.year == single;
     return matchSearch && matchDecade && matchYear;
   });
 
-  // Master update
-  document.getElementById('tableBody').innerHTML = filtered.map(r => `
-    <tr>
-      <td class="year-col">${r.year}</td>
-      <td style="font-weight:500; color:var(--accent)">${r.movie}</td>
-      <td>${r.director}</td>
-      <td>${r.screenwriter}</td>
-      <td>${r.cinematography}</td>
-      <td>${r.music}</td>
-      <td style="color:var(--muted); font-size:11px">${r.country}</td>
-    </tr>`).join('');
-
-  const countrySet = new Set();
-  const directorSet = new Set();
-  const yearSet = new Set();
-
+  document.getElementById('tableBody').innerHTML = filtered.map(r => `<tr><td class="year-col">${r.year}</td><td style="font-weight:500; color:var(--accent)">${r.movie}</td><td>${r.director}</td><td>${r.screenwriter}</td><td>${r.cinematography}</td><td>${r.music}</td><td style="color:var(--muted); font-size:11px">${r.country}</td></tr>`).join('');
+  
+  const sets = { countries: new Set(), directors: new Set(), years: new Set() };
   filtered.forEach(r => {
-    if (r.country && r.country !== '—') r.country.split(',').forEach(c => countrySet.add(c.trim()));
-    if (r.director && r.director !== '—') r.director.split(',').forEach(d => directorSet.add(d.trim()));
-    if (r.year) yearSet.add(r.year);
+    if (r.country !== '—') r.country.split(',').forEach(c => sets.countries.add(c.trim()));
+    if (r.director !== '—') r.director.split(',').forEach(d => sets.directors.add(d.trim()));
+    if (r.year) sets.years.add(r.year);
   });
 
   document.getElementById('rowCount').textContent = `${filtered.length} films`;
   document.getElementById('statMovies').textContent = filtered.length;
-  document.getElementById('statYears').textContent = yearSet.size;
-  document.getElementById('statCountries').textContent = countrySet.size;
-  document.getElementById('statDirectors').textContent = directorSet.size;
-  
+  document.getElementById('statYears').textContent = sets.years.size;
+  document.getElementById('statCountries').textContent = sets.countries.size;
+  document.getElementById('statDirectors').textContent = sets.directors.size;
   generateChart(filtered);
 }
 
 function generateChart(data) {
-  const column = document.getElementById('graphColumn').value;
+  const col = document.getElementById('graphColumn').value;
   const limit = parseInt(document.getElementById('graphLimit').value);
   const counts = {};
   
   data.forEach(r => {
-    let val = column === 'decade' ? `${r.decade}s` : r[column];
+    let val = col === 'decade' ? `${r.decade}s` : (col === 'year' ? r.year : r[col]);
     if (!val || val === '—') return;
-    val.split(',').forEach(p => {
-      const name = p.trim();
-      counts[name] = (counts[name] || 0) + 1;
-    });
+    String(val).split(',').forEach(p => { const n = p.trim(); counts[n] = (counts[n] || 0) + 1; });
   });
 
   let items = Object.entries(counts).sort((a,b) => {
-    // If decades, sort chronologically
-    if (column === 'decade') return parseInt(a[0]) - parseInt(b[0]);
-    // Otherwise sort by count, then by last name
-    if (b[1] !== a[1]) return b[1] - a[1];
-    const getSortKey = (s) => s.split(' ').pop().toLowerCase();
-    return getSortKey(a[0]).localeCompare(getSortKey(b[0]));
+    if (limit === 0 && (col === 'decade' || col === 'year')) return parseInt(a[0]) - parseInt(b[0]); // Sort chronologically if 'All'
+    if (b[1] !== a[1]) return b[1] - a[1]; // Sort by count
+    return a[0].split(' ').pop().localeCompare(b[0].split(' ').pop()); // Alpha tie-breaker
   });
 
-  // Apply limit if specified (unless it's decades, usually best to see all decades)
-  if (limit > 0 && column !== 'decade') {
-    items = items.slice(0, limit);
-  }
-
+  if (limit > 0) items = items.slice(0, limit);
   const max = Math.max(...items.map(i => i[1]), 1);
 
-  document.getElementById('chartContainer').innerHTML = items.map(([label, count]) => `
+  document.getElementById('chartContainer').innerHTML = items.map(([l, c]) => `
     <div class="bar-row">
-      <div class="bar-info"><span>${label}</span><span>${count}</span></div>
-      <div class="bar-bg"><div class="bar-fill" style="width:${(count/max)*100}%"></div></div>
+      <div class="bar-info"><span>${l}</span><span>${c}</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${(c/max)*100}%"></div></div>
     </div>`).join('');
 }
 
-function switchTab(tabId) {
-  document.querySelectorAll('.tab-pane').forEach(t => t.style.display = 'none');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(tabId).style.display = 'block';
-  event.currentTarget.classList.add('active');
-  if(tabId === 'graphTab') renderAll();
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('decadeSelect').value = '';
+  document.getElementById('yearSingle').value = '';
+  renderAll();
 }
 
-['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => {
-  document.getElementById(id).addEventListener('input', renderAll);
-});
+function switchTab(t) {
+  document.querySelectorAll('.tab-pane').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(t).style.display = 'flex';
+  event.currentTarget.classList.add('active');
+  if(t === 'graphTab') renderAll();
+}
 
+['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => document.getElementById(id).addEventListener('input', renderAll));
 loadData();
 </script>
 </body>
