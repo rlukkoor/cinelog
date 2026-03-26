@@ -23,10 +23,12 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
+  /* ── Header ── */
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
   .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 0.02em; }
-  
   .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Left Panel ── */
   .data-panel { width: 62%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
   .filter-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
   .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; }
@@ -36,6 +38,7 @@
   .back-btn { background: var(--surface2); border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: none; }
   .back-btn:hover { background: var(--accent); color: var(--bg); }
 
+  /* ── Table ── */
   .table-wrap { flex: 1; overflow: auto; background: var(--bg); }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
@@ -46,9 +49,11 @@
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
+  /* Letterboxd Style Link */
   .movie-link { color: var(--accent); text-decoration: none; font-weight: 500; transition: opacity 0.2s; cursor: pointer; }
   .movie-link:hover { opacity: 0.7; text-decoration: underline; }
 
+  /* ── Right Panel ── */
   .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab-btn { flex: 1; padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--muted); background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
@@ -70,7 +75,7 @@
   .stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--accent); }
   .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; }
 
-  .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 10px; }
+  .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 10px; text-align: center; }
 </style>
 </head>
 <body>
@@ -146,13 +151,8 @@
 </div>
 
 <script>
-// IMPORTANT: Replace this with your fresh CSV link from File > Share > Publish to Web
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
-
-const PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`
-];
+// Replace this with your URL from File > Share > Publish to web (CSV format)
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?output=csv&gid=1935691887";
 
 let allRows = [];
 let historyStack = [];
@@ -161,44 +161,60 @@ async function loadData() {
   const overlay = document.getElementById('loadingOverlay');
   const status = document.getElementById('loadingStatus');
 
-  for (let proxyFn of PROXIES) {
-    try {
-      status.textContent = "Attempting connection...";
-      const res = await fetch(proxyFn(SHEET_URL), { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) throw new Error("404 Not Found");
-      
+  // Attempt 1: Direct Fetch
+  try {
+    status.textContent = "Connecting directly to Google...";
+    const res = await fetch(SHEET_URL);
+    if (res.ok) {
       const text = await res.text();
-      allRows = cleanRows(parseCSV(text));
-      
-      if (allRows.length > 0) { 
-        toggleSortUI();
-        renderAll(); 
-        overlay.style.display = 'none'; 
-        return; 
-      }
-    } catch (e) { 
-      console.error("Proxy fail:", e.message);
-      status.textContent = "Retrying with backup...";
+      processData(text);
+      return;
     }
+  } catch (e) {
+    console.warn("Direct fetch blocked, trying proxy fallback...");
   }
-  status.innerHTML = "<span style='color:var(--danger)'>Error 404: Spreadsheet Link Broken.</span><br>Check File > Share > Publish to Web.";
+
+  // Attempt 2: AllOrigins Proxy Fallback
+  try {
+    status.textContent = "Bypassing protocol errors...";
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      const text = await res.text();
+      processData(text);
+      return;
+    }
+  } catch (e) {
+    status.innerHTML = `<span style="color:var(--danger)">Connection Lost</span><br>Check if Sheet is still "Published to Web".`;
+    console.error("All load attempts failed:", e);
+  }
+}
+
+function processData(text) {
+  allRows = cleanRows(parseCSV(text));
+  if (allRows.length > 0) {
+    toggleSortUI();
+    renderAll();
+    document.getElementById('loadingOverlay').style.display = 'none';
+  } else {
+    document.getElementById('loadingStatus').textContent = "Connection established, but the file is empty.";
+  }
 }
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
     const vals = []; let cur = '', inQ = false;
-    for (let c of line) { 
-        if (c === '"') inQ = !inQ; 
-        else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } 
-        else cur += c; 
+    for (let c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += c;
     }
     vals.push(cur.trim());
-    
-    // Map objects but keep the raw values array for safety
-    const obj = { _raw: vals.map(v => v.replace(/^"|"$/g, '')) }; 
-    headers.forEach((h, i) => obj[h] = vals[i] || ''); 
+    const obj = { _raw: vals.map(v => v.replace(/^"|"$/g, '')) };
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
     return obj;
   });
 }
@@ -206,25 +222,25 @@ function parseCSV(text) {
 function cleanRows(rows) {
   let lastYear = '';
   return rows.map(r => {
-    const v = r._raw; // Positional data array
-    
-    // Fallback logic: check named headers first, then fallback to column position
+    const v = r._raw;
+    // Movie is usually index 1
     const movie = (r['Movie'] || v[1] || '').trim();
     if (!movie || String(movie).match(/^\d+$/)) return null;
 
+    // Year is usually index 0
     const rawYear = r['Year'] || v[0];
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
 
-    return { 
-      year: lastYear, 
-      movie: movie, 
-      director: r['Director'] || v[2] || '—', 
-      screenwriter: r['Screenwriter'] || v[3] || '—', 
-      cinematography: r['Cinematography'] || v[4] || '—', 
-      music: r['Music'] || v[5] || '—', 
-      country: r['Country'] || v[6] || '—', 
+    return {
+      year: lastYear,
+      movie: movie,
+      director: r['Director'] || v[2] || '—',
+      screenwriter: r['Screenwriter'] || v[3] || '—',
+      cinematography: r['Cinematography'] || v[4] || '—',
+      music: r['Music'] || v[5] || '—',
+      country: r['Country'] || v[6] || '—',
       decade: Math.floor(lastYear / 10) * 10,
-      link: (r['Link'] || v[7] || '').trim() // Column H
+      link: (r['Link'] || v[7] || '').trim() // Pulling from your new Column H
     };
   }).filter(Boolean);
 }
@@ -284,7 +300,7 @@ function renderAll(skipHistory = false) {
   });
 
   document.getElementById('tableBody').innerHTML = filtered.map(r => {
-    // If no Link exists in Column H, fallback to search
+    // If a link exists in Column H, use it. Otherwise fallback to a Letterboxd search.
     const letterboxdUrl = (r.link && r.link.startsWith('http')) ? r.link : `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
     
     return `<tr>
@@ -380,6 +396,7 @@ function switchTab(t) {
 ['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => document.getElementById(id).addEventListener('input', () => {
     renderAll();
 }));
+
 loadData();
 </script>
 </body>
