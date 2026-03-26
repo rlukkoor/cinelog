@@ -25,8 +25,8 @@
 
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
   .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 0.02em; }
+  
   .layout { display: flex; flex: 1; overflow: hidden; }
-
   .data-panel { width: 62%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
   .filter-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
   .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; }
@@ -77,6 +77,7 @@
 
 <div class="loading-overlay" id="loadingOverlay">
   <div style="font-family:'DM Serif Display'; font-size:32px; color:var(--accent)">Syncing Archive...</div>
+  <div id="loadingStatus" style="font-family:'DM Mono'; font-size:11px; color:var(--muted)">Checking connection...</div>
 </div>
 
 <div class="topbar">
@@ -145,26 +146,42 @@
 </div>
 
 <script>
+// IMPORTANT: Replace this with your fresh CSV link from File > Share > Publish to Web
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSav8XI8TCX44vLWuTm1xawbCj9UMuupmBd1Avfa57arfa96O5RVMXZCNwEyL9oFUvD20/pub?gid=1935691887&single=true&output=csv";
-const PROXIES = [url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, url => `https://corsproxy.io/?${encodeURIComponent(url)}` ];
+
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`
+];
+
 let allRows = [];
 let historyStack = [];
 
 async function loadData() {
   const overlay = document.getElementById('loadingOverlay');
+  const status = document.getElementById('loadingStatus');
+
   for (let proxyFn of PROXIES) {
     try {
-      const res = await fetch(proxyFn(SHEET_URL), { signal: AbortSignal.timeout(8000) });
+      status.textContent = "Attempting connection...";
+      const res = await fetch(proxyFn(SHEET_URL), { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error("404 Not Found");
+      
       const text = await res.text();
       allRows = cleanRows(parseCSV(text));
+      
       if (allRows.length > 0) { 
         toggleSortUI();
         renderAll(); 
         overlay.style.display = 'none'; 
         return; 
       }
-    } catch (e) { console.warn("Trying next proxy..."); }
+    } catch (e) { 
+      console.error("Proxy fail:", e.message);
+      status.textContent = "Retrying with backup...";
+    }
   }
+  status.innerHTML = "<span style='color:var(--danger)'>Error 404: Spreadsheet Link Broken.</span><br>Check File > Share > Publish to Web.";
 }
 
 function parseCSV(text) {
@@ -172,29 +189,42 @@ function parseCSV(text) {
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   return lines.slice(1).map(line => {
     const vals = []; let cur = '', inQ = false;
-    for (let c of line) { if (c === '"') inQ = !inQ; else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } else cur += c; }
+    for (let c of line) { 
+        if (c === '"') inQ = !inQ; 
+        else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; } 
+        else cur += c; 
+    }
     vals.push(cur.trim());
-    const obj = {}; headers.forEach((h, i) => obj[h] = vals[i] || ''); return obj;
+    
+    // Map objects but keep the raw values array for safety
+    const obj = { _raw: vals.map(v => v.replace(/^"|"$/g, '')) }; 
+    headers.forEach((h, i) => obj[h] = vals[i] || ''); 
+    return obj;
   });
 }
 
 function cleanRows(rows) {
   let lastYear = '';
   return rows.map(r => {
-    const movie = r['Movie']?.replace(/^"|"$/g, '').trim();
-    if (!movie || movie.match(/^\d+$/)) return null;
-    const rawYear = r['Year']?.trim();
+    const v = r._raw; // Positional data array
+    
+    // Fallback logic: check named headers first, then fallback to column position
+    const movie = (r['Movie'] || v[1] || '').trim();
+    if (!movie || String(movie).match(/^\d+$/)) return null;
+
+    const rawYear = r['Year'] || v[0];
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
+
     return { 
       year: lastYear, 
       movie: movie, 
-      director: r['Director'] || '—', 
-      screenwriter: r['Screenwriter'] || '—', 
-      cinematography: r['Cinematography'] || '—', 
-      music: r['Music'] || '—', 
-      country: r['Country'] || '—', 
+      director: r['Director'] || v[2] || '—', 
+      screenwriter: r['Screenwriter'] || v[3] || '—', 
+      cinematography: r['Cinematography'] || v[4] || '—', 
+      music: r['Music'] || v[5] || '—', 
+      country: r['Country'] || v[6] || '—', 
       decade: Math.floor(lastYear / 10) * 10,
-      link: r['Link'] || '' // Column H mapping
+      link: (r['Link'] || v[7] || '').trim() // Column H
     };
   }).filter(Boolean);
 }
@@ -254,8 +284,8 @@ function renderAll(skipHistory = false) {
   });
 
   document.getElementById('tableBody').innerHTML = filtered.map(r => {
-    // If no specific link exists in Column H, fallback to a Letterboxd search
-    const letterboxdUrl = r.link || `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
+    // If no Link exists in Column H, fallback to search
+    const letterboxdUrl = (r.link && r.link.startsWith('http')) ? r.link : `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
     
     return `<tr>
       <td class="year-col">${r.year}</td>
