@@ -23,12 +23,10 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-  /* ── Header ── */
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
   .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 0.02em; }
   .layout { display: flex; flex: 1; overflow: hidden; }
 
-  /* ── Data Panel (Left) ── */
   .data-panel { width: 62%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
   .filter-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
   .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; }
@@ -38,7 +36,6 @@
   .back-btn { background: var(--surface2); border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: none; }
   .back-btn:hover { background: var(--accent); color: var(--bg); }
 
-  /* ── Table Layout ── */
   .table-wrap { flex: 1; overflow: auto; background: var(--bg); }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
@@ -49,11 +46,9 @@
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
-  /* Letterboxd Link Styling */
-  .movie-link { color: var(--accent); text-decoration: none; font-weight: 500; transition: opacity 0.2s; }
+  .movie-link { color: var(--accent); text-decoration: none; font-weight: 500; transition: opacity 0.2s; cursor: pointer; }
   .movie-link:hover { opacity: 0.7; text-decoration: underline; }
 
-  /* ── Insights & Charts ── */
   .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab-btn { flex: 1; padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--muted); background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
@@ -70,7 +65,6 @@
   .bar-fill { height: 100%; background: var(--accent2); border-radius: 3px; transition: width 0.6s ease-out, background 0.2s; }
   .bar-fill.zero { background: var(--empty); }
 
-  /* ── Stats Bar ── */
   .stats-row { display: flex; border-top: 1px solid var(--border); background: var(--surface); }
   .stat { flex: 1; padding: 15px 20px; border-right: 1px solid var(--border); }
   .stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--accent); }
@@ -191,7 +185,17 @@ function cleanRows(rows) {
     if (!movie || movie.match(/^\d+$/)) return null;
     const rawYear = r['Year']?.trim();
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
-    return { year: lastYear, movie: movie, director: r['Director'] || '—', screenwriter: r['Screenwriter'] || '—', cinematography: r['Cinematography'] || '—', music: r['Music'] || '—', country: r['Country'] || '—', decade: Math.floor(lastYear / 10) * 10 };
+    return { 
+      year: lastYear, 
+      movie: movie, 
+      director: r['Director'] || '—', 
+      screenwriter: r['Screenwriter'] || '—', 
+      cinematography: r['Cinematography'] || '—', 
+      music: r['Music'] || '—', 
+      country: r['Country'] || '—', 
+      decade: Math.floor(lastYear / 10) * 10,
+      link: r['Link'] || '' // Column H mapping
+    };
   }).filter(Boolean);
 }
 
@@ -245,16 +249,17 @@ function renderAll(skipHistory = false) {
   const single = document.getElementById('yearSingle').value.trim();
 
   const filtered = allRows.filter(r => {
-    const matchSearch = Object.keys(r).some(k => (k !== 'year' && k !== 'decade') && String(r[k]).toLowerCase().includes(searchStr));
+    const matchSearch = Object.keys(r).some(k => (k !== 'year' && k !== 'decade' && k !== 'link') && String(r[k]).toLowerCase().includes(searchStr));
     return matchSearch && (!decade || r.decade == decade) && (!single || r.year == single);
   });
 
   document.getElementById('tableBody').innerHTML = filtered.map(r => {
-    // Generate Letterboxd Search URL
-    const searchUrl = `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
+    // If no specific link exists in Column H, fallback to a Letterboxd search
+    const letterboxdUrl = r.link || `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
+    
     return `<tr>
       <td class="year-col">${r.year}</td>
-      <td><a href="${searchUrl}" target="_blank" class="movie-link">${r.movie}</a></td>
+      <td><a href="${letterboxdUrl}" target="_blank" class="movie-link">${r.movie}</a></td>
       <td>${r.director}</td>
       <td>${r.screenwriter}</td>
       <td>${r.cinematography}</td>
