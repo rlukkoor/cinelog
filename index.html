@@ -49,6 +49,10 @@
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
+  /* Letterboxd Link Styling */
+  .movie-link { color: var(--accent); text-decoration: none; font-weight: 500; transition: opacity 0.2s; }
+  .movie-link:hover { opacity: 0.7; text-decoration: underline; }
+
   /* ── Insights & Charts ── */
   .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -160,7 +164,7 @@ async function loadData() {
       const text = await res.text();
       allRows = cleanRows(parseCSV(text));
       if (allRows.length > 0) { 
-        toggleSortUI(); // Initialize visibility
+        toggleSortUI();
         renderAll(); 
         overlay.style.display = 'none'; 
         return; 
@@ -194,7 +198,6 @@ function cleanRows(rows) {
 function toggleSortUI() {
   const col = document.getElementById('graphColumn').value;
   const sortUI = document.getElementById('graphSort');
-  // Only show the Timeline/Volume toggle for Year or Decade
   sortUI.style.display = (col === 'year' || col === 'decade') ? 'block' : 'none';
 }
 
@@ -246,7 +249,19 @@ function renderAll(skipHistory = false) {
     return matchSearch && (!decade || r.decade == decade) && (!single || r.year == single);
   });
 
-  document.getElementById('tableBody').innerHTML = filtered.map(r => `<tr><td class="year-col">${r.year}</td><td style="font-weight:500; color:var(--accent)">${r.movie}</td><td>${r.director}</td><td>${r.screenwriter}</td><td>${r.cinematography}</td><td>${r.music}</td><td style="color:var(--muted); font-size:11px">${r.country}</td></tr>`).join('');
+  document.getElementById('tableBody').innerHTML = filtered.map(r => {
+    // Generate Letterboxd Search URL
+    const searchUrl = `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
+    return `<tr>
+      <td class="year-col">${r.year}</td>
+      <td><a href="${searchUrl}" target="_blank" class="movie-link">${r.movie}</a></td>
+      <td>${r.director}</td>
+      <td>${r.screenwriter}</td>
+      <td>${r.cinematography}</td>
+      <td>${r.music}</td>
+      <td style="color:var(--muted); font-size:11px">${r.country}</td>
+    </tr>`;
+  }).join('');
   
   const sets = { countries: new Set(), directors: new Set(), years: new Set() };
   filtered.forEach(r => {
