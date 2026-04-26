@@ -23,12 +23,10 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-  /* ── Header ── */
   .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
   .logo { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 0.02em; }
+  
   .layout { display: flex; flex: 1; overflow: hidden; }
-
-  /* ── Left Panel ── */
   .data-panel { width: 62%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
   .filter-row { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
   .filter-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; color: var(--text); font-size: 12px; outline: none; }
@@ -38,7 +36,6 @@
   .back-btn { background: var(--surface2); border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: none; }
   .back-btn:hover { background: var(--accent); color: var(--bg); }
 
-  /* ── Table ── */
   .table-wrap { flex: 1; overflow: auto; background: var(--bg); }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead { position: sticky; top: 0; background: var(--surface); z-index: 10; }
@@ -49,11 +46,9 @@
   tr:hover td { background: var(--surface2); }
   td.year-col { color: var(--accent); font-family: 'DM Mono', monospace; }
 
-  /* Letterboxd Style Link */
   .movie-link { color: var(--accent); text-decoration: none; font-weight: 500; transition: opacity 0.2s; cursor: pointer; }
   .movie-link:hover { opacity: 0.7; text-decoration: underline; }
 
-  /* ── Right Panel ── */
   .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab-btn { flex: 1; padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--muted); background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
@@ -75,7 +70,7 @@
   .stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--accent); }
   .stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; }
 
-  .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 10px; text-align: center; }
+  .loading-overlay { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 10px; }
 </style>
 </head>
 <body>
@@ -157,11 +152,19 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSa
 let allRows = [];
 let historyStack = [];
 
+// Helper: Normalizes text by stripping accents (diacritics)
+const normalize = (str) => {
+  if (!str) return "";
+  return String(str)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+};
+
 async function loadData() {
   const overlay = document.getElementById('loadingOverlay');
   const status = document.getElementById('loadingStatus');
 
-  // Attempt 1: Direct Fetch
   try {
     status.textContent = "Connecting directly to Google...";
     const res = await fetch(SHEET_URL);
@@ -174,7 +177,6 @@ async function loadData() {
     console.warn("Direct fetch blocked, trying proxy fallback...");
   }
 
-  // Attempt 2: AllOrigins Proxy Fallback
   try {
     status.textContent = "Bypassing protocol errors...";
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEET_URL)}`;
@@ -185,8 +187,7 @@ async function loadData() {
       return;
     }
   } catch (e) {
-    status.innerHTML = `<span style="color:var(--danger)">Connection Lost</span><br>Check if Sheet is still "Published to Web".`;
-    console.error("All load attempts failed:", e);
+    status.innerHTML = `<span style="color:var(--danger)">Connection Lost</span><br>Please refresh.`;
   }
 }
 
@@ -197,7 +198,7 @@ function processData(text) {
     renderAll();
     document.getElementById('loadingOverlay').style.display = 'none';
   } else {
-    document.getElementById('loadingStatus').textContent = "Connection established, but the file is empty.";
+    document.getElementById('loadingStatus').textContent = "Empty file found.";
   }
 }
 
@@ -223,11 +224,9 @@ function cleanRows(rows) {
   let lastYear = '';
   return rows.map(r => {
     const v = r._raw;
-    // Movie is usually index 1
     const movie = (r['Movie'] || v[1] || '').trim();
     if (!movie || String(movie).match(/^\d+$/)) return null;
 
-    // Year is usually index 0
     const rawYear = r['Year'] || v[0];
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
 
@@ -240,7 +239,7 @@ function cleanRows(rows) {
       music: r['Music'] || v[5] || '—',
       country: r['Country'] || v[6] || '—',
       decade: Math.floor(lastYear / 10) * 10,
-      link: (r['Link'] || v[7] || '').trim() // Pulling from your new Column H
+      link: (r['Link'] || v[7] || '').trim()
     };
   }).filter(Boolean);
 }
@@ -290,19 +289,23 @@ function applyFilter(label) {
 }
 
 function renderAll(skipHistory = false) {
-  const searchStr = document.getElementById('searchInput').value.toLowerCase();
+  // Normalize the user's search input
+  const searchStr = normalize(document.getElementById('searchInput').value);
   const decade = document.getElementById('decadeSelect').value;
   const single = document.getElementById('yearSingle').value.trim();
 
   const filtered = allRows.filter(r => {
-    const matchSearch = Object.keys(r).some(k => (k !== 'year' && k !== 'decade' && k !== 'link') && String(r[k]).toLowerCase().includes(searchStr));
+    // Check all visible columns, normalizing the data text as well
+    const matchSearch = Object.keys(r).some(k => {
+      if (['year', 'decade', 'link'].includes(k)) return false;
+      return normalize(r[k]).includes(searchStr);
+    });
+
     return matchSearch && (!decade || r.decade == decade) && (!single || r.year == single);
   });
 
   document.getElementById('tableBody').innerHTML = filtered.map(r => {
-    // If a link exists in Column H, use it. Otherwise fallback to a Letterboxd search.
     const letterboxdUrl = (r.link && r.link.startsWith('http')) ? r.link : `https://letterboxd.com/search/${encodeURIComponent(r.movie + ' ' + r.year)}/`;
-    
     return `<tr>
       <td class="year-col">${r.year}</td>
       <td><a href="${letterboxdUrl}" target="_blank" class="movie-link">${r.movie}</a></td>
