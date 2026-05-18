@@ -225,7 +225,7 @@ function cleanRows(rows) {
   return rows.map(r => {
     const v = r._raw;
     const movie = (r['Movie'] || v[1] || '').trim();
-    if (!movie || String(movie).match(/^\d+$/)) return null;
+    if (!movie) return null;
 
     const rawYear = r['Year'] || v[0];
     if (rawYear && !isNaN(parseInt(rawYear))) lastYear = parseInt(rawYear);
