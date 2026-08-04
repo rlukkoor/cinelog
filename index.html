@@ -152,10 +152,18 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmUAAYiA6tSa
 let allRows = [];
 let historyStack = [];
 
-// Helper: Normalizes text by stripping accents (diacritics)
+// Helper: Normalizes text by stripping accents (diacritics) and mapping
+// non-decomposable characters (e.g. Ł→l, ø→o, ß→ss) to ASCII equivalents.
+const CHAR_MAP = {
+  'ł':'l','Ł':'l','ø':'o','Ø':'o','đ':'d','Đ':'d','ß':'ss',
+  'æ':'ae','Æ':'ae','œ':'oe','Œ':'oe','å':'a','Å':'a',
+  'ð':'d','Ð':'d','þ':'th','Þ':'th','ŋ':'n','ı':'i',
+  'ĸ':'k','ŉ':'n','ƒ':'f','ș':'s','ț':'t','Ș':'s','Ț':'t'
+};
 const normalize = (str) => {
   if (!str) return "";
   return String(str)
+    .replace(/[^\u0000-\u007E]/g, c => CHAR_MAP[c] || c)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
