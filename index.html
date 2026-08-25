@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cinelog | Film Archive</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d0d0d'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23e8c97a' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23e8c97a'/%3E%3Cline x1='16' y1='6' x2='16' y2='10' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='16' y1='22' x2='16' y2='26' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='6' y1='16' x2='10' y2='16' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='22' y1='16' x2='26' y2='16' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='9.17' y1='9.17' x2='12.05' y2='12.05' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='19.95' y1='19.95' x2='22.83' y2='22.83' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='22.83' y1='9.17' x2='19.95' y2='12.05' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12.05' y1='19.95' x2='9.17' y2='22.83' stroke='%23e8c97a' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='16' y1='16' x2='16' y2='10' stroke='%23e8c97a' stroke-width='1.2' stroke-linecap='round'/%3E%3Cline x1='16' y1='16' x2='20' y2='16' stroke='%23c9a84c' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -49,10 +50,8 @@
   .movie-link { color: var(--accent); text-decoration: none; font-weight: 500; transition: opacity 0.2s; cursor: pointer; }
   .movie-link:hover { opacity: 0.7; text-decoration: underline; }
 
-  .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .panel-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .tab-btn { flex: 1; padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--muted); background: transparent; border: none; cursor: pointer; border-bottom: 2px solid transparent; }
-  .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+  .insights-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .insights-header { padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; color: var(--accent); letter-spacing: 0.08em; }
 
   .graph-wrap { flex: 1; overflow-y: auto; padding: 20px; }
   .bar-row { margin-bottom: 12px; cursor: pointer; }
@@ -112,36 +111,28 @@
     </div>
   </div>
 
-  <div class="chat-panel">
-    <div class="panel-tabs">
-      <button class="tab-btn" onclick="switchTab('chatTab')">Chat</button>
-      <button class="tab-btn active" onclick="switchTab('graphTab')">Visual Insights</button>
+  <div class="insights-panel">
+    <div class="insights-header">Visual Insights</div>
+    <div class="filter-row" style="background:var(--surface); flex-wrap: wrap;">
+      <select class="filter-input" id="graphColumn" onchange="toggleSortUI(); renderAll()" style="flex:2">
+        <option value="director" selected>Top Directors</option>
+        <option value="screenwriter">Top Screenwriters</option>
+        <option value="cinematography">Top Cinematographers</option>
+        <option value="music">Top Composers</option>
+        <option value="country">Top Countries</option>
+        <option value="decade">By Decade</option>
+        <option value="year">By Individual Year</option>
+      </select>
+      <select class="filter-input" id="graphSort" onchange="renderAll()" style="flex:1; display:none;">
+        <option value="chron">Timeline</option>
+        <option value="vol" selected>By Volume</option>
+      </select>
+      <select class="filter-input" id="graphLimit" onchange="renderAll()" style="flex:1">
+        <option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="0">Show All</option>
+      </select>
+      <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
     </div>
-    <div class="panel-content" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-      <div id="graphTab" class="tab-pane active" style="display:flex; flex-direction:column; height:100%;">
-        <div class="filter-row" style="background:var(--surface); flex-wrap: wrap;">
-          <select class="filter-input" id="graphColumn" onchange="toggleSortUI(); renderAll()" style="flex:2">
-            <option value="director" selected>Top Directors</option>
-            <option value="screenwriter">Top Screenwriters</option>
-            <option value="cinematography">Top Cinematographers</option>
-            <option value="music">Top Composers</option>
-            <option value="country">Top Countries</option>
-            <option value="decade">By Decade</option>
-            <option value="year">By Individual Year</option>
-          </select>
-          <select class="filter-input" id="graphSort" onchange="renderAll()" style="flex:1; display:none;">
-            <option value="chron">Timeline</option>
-            <option value="vol" selected>By Volume</option>
-          </select>
-          <select class="filter-input" id="graphLimit" onchange="renderAll()" style="flex:1">
-            <option value="10">Top 10</option><option value="25" selected>Top 25</option><option value="0">Show All</option>
-          </select>
-          <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
-        </div>
-        <div class="graph-wrap" id="chartContainer"></div>
-      </div>
-      <div id="chatTab" class="tab-pane" style="display:none; padding:20px; color:var(--muted); font-family:'DM Mono'">Archive analysis module active.</div>
-    </div>
+    <div class="graph-wrap" id="chartContainer"></div>
   </div>
 </div>
 
@@ -416,14 +407,6 @@ function clearFilters() {
   document.getElementById('decadeSelect').value = '';
   document.getElementById('yearSingle').value = '';
   renderAll();
-}
-
-function switchTab(t) {
-  document.querySelectorAll('.tab-pane').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById(t).style.display = 'flex';
-  event.currentTarget.classList.add('active');
-  if(t === 'graphTab') renderAll();
 }
 
 ['searchInput', 'decadeSelect', 'yearSingle'].forEach(id => document.getElementById(id).addEventListener('input', () => {
